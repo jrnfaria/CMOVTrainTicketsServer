@@ -1,2 +1,2 @@
-# COMVTrainTicketServer
-Server for the train ticket
+# CMOVTrainTicketsServer
+Server for the train tickets projetct
