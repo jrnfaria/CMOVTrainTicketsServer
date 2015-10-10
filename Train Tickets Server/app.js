@@ -12,4 +12,4 @@ app.use(bodyParser.json())
 require('./routes/routes.js')(app);
 
 app.listen(port);
-console.log('The App runs on port ' + port);
+console.log('App running on port ' + port);

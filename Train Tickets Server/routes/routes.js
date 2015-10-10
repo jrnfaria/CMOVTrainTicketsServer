@@ -49,6 +49,16 @@ module.exports = function(app)
         });
     });
 
+    app.post('/mytickets', function(req, res)
+    {
+        var username = req.body.username;
+
+        requests.mytickets(username, function(found)
+        {
+            res.json(found);
+        });
+    });
+
     app.get('/users', function(req, res)
     {
         requests.users(function(found)
