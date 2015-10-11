@@ -1,4 +1,4 @@
-var requests = require('config/requests');
+var requests = require('../config/requests');
 var request = require('request');
 
 module.exports = function(app)

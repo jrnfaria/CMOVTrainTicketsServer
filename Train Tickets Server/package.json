@@ -1,0 +1,24 @@
+{
+  "name": "trainticketserver",
+  "version": "1.0.0",
+  "description": "Server for train app",
+  "main": "app.js",
+  "dependencies": {
+    "body-parser": "^1.14.1",
+    "connect": "^3.4.0",
+    "express": "^4.13.3",
+    "request": "^2.64.0",
+    "sqlite3": "^3.1.0"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "train",
+    "ticket",
+    "server"
+  ],
+  "author": "João Sá, José Faria, Ricardo Silva",
+  "license": "ISC"
+}
