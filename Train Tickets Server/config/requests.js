@@ -83,7 +83,7 @@ exports.signin = function (username, password, callback) {
 }
 
 exports.buyticket = function (id, departure, arrival, train, departuredate, username, callback) {
-    var stmt = db.prepare("INSERT INTO TICKET VALUES ($id, $departure, $arrival, $train, $departuredate, $username)");
+    var stmt = db.prepare("INSERT INTO TICKET (TICKETID,DEPARTURE,ARRIVAL,TRAIN,DEPARTUREDATE,USER) VALUES ($id, $departure, $arrival, $train, $departuredate, $username)");
     stmt.bind({
         $id: id,
         $departure: departure,
