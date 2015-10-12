@@ -1,9 +1,10 @@
 // Module dependencies
 var express = require('express');
 var connect = require('connect');
-var bodyParser = require('body-parser')
+var bodyParser = require('body-parser');
+var settings = require('./settings.json');
 var app = express();
-var port = process.env.PORT || 8080;
+var port = process.env.PORT || settings.port;
 
 // parse application/json
 app.use(bodyParser.json())

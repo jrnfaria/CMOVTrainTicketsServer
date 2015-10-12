@@ -7,8 +7,7 @@ var exists = fs.existsSync(file);
 var sqlite3 = require("sqlite3").verbose();
 var db = new sqlite3.Database(file);
 
-if(!exists)
-{
+if (!exists) {
     console.log("Creating database file...");
     fs.openSync(file, "w");
     db.run("CREATE TABLE USER (NAME TEXT, USERNAME TEXT, PASSWORD TEXT)");
@@ -17,58 +16,98 @@ if(!exists)
     console.log("Done!");
 }
 
-exports.signup = function(name, username, password, creditcardtype, creditcardnumber, creditcardvalidity, callback)
-{
+var userAlreadyExists = function (username) {
+    db.all("SELECT * FROM USER WHERE USERNAME=?", [username], function (err, rows) {
+        if (err) {
+            console.log(err);
+            return true;
+        } else
+            return !rows.length == 0;
+    });
+}
+
+exports.signup = function (name, username, password, creditcardtype, creditcardnumber, creditcardvalidity, callback) {
+   
+   if(userAlreadyExists(username))
+   {
     var stmt = db.prepare("INSERT INTO USER VALUES ($name, $username, $password)");
-    stmt.bind({$name:name, $username:username, $password:password});
+    stmt.bind({
+        $name: name,
+        $username: username,
+        $password: password
+    });
     stmt.run();
     stmt.finalize();
     stmt = db.prepare("INSERT INTO CREDITCARD VALUES ($creditcardtype, $creditcardnumber, $creditcardvalidity, $username)");
-    stmt.bind({$creditcardtype:creditcardtype, $creditcardnumber:creditcardnumber, $creditcardvalidity:creditcardvalidity, $username:username});
+    stmt.bind({
+        $creditcardtype: creditcardtype,
+        $creditcardnumber: creditcardnumber,
+        $creditcardvalidity: creditcardvalidity,
+        $username: username
+    });
     stmt.run();
     stmt.finalize();
 
-    callback({'response': "OK"});
+    callback({
+        'response': "OK"
+    },null);
+   }
+   else
+   {
+    callback(null,{
+        'response': "Username already exists"
+    });
+   }
 }
 
-exports.signin = function(username, password, callback)
-{
-    requests.users(function(users)
-    {
+
+
+exports.signin = function (username, password, callback) {
+    this.users(function (users) {
         var found = 0;
 
-        for(var i = 0; i < users.length; i++) {
-            if(users[i].USERNAME == username && users[i].PASSWORD == password)
+        for (var i = 0; i < users.length; i++) {
+            if (users[i].USERNAME == username && users[i].PASSWORD == password)
                 found = 1;
         }
 
-        if(found == 1)
-            callback({'response': "OK"});
+        if (found == 1)
+            callback({
+                'response': "OK"
+            },null);
         else
-            callback({'response': "ERROR"});
+            callback(null,{
+                'response': "Username or password incorrect"
+            });
     });
 }
 
-exports.buyticket = function(id, departure, arrival, train, departuredate, username, callback)
-{
+exports.buyticket = function (id, departure, arrival, train, departuredate, username, callback) {
     var stmt = db.prepare("INSERT INTO TICKET VALUES ($id, $departure, $arrival, $train, $departuredate, $username)");
-    stmt.bind({$id:id, $departure:departure, $arrival:arrival, $train:train, $departuredate:departuredate, $username:username});
+    stmt.bind({
+        $id: id,
+        $departure: departure,
+        $arrival: arrival,
+        $train: train,
+        $departuredate: departuredate,
+        $username: username
+    });
     stmt.run();
     stmt.finalize();
 
-    callback({'response': "OK"});
+    callback({
+        'response': "OK"
+    },null);
 }
 
-exports.mytickets = function(username, callback)
-{
-    db.all("SELECT * FROM TICKET WHERE USER=?", [username], function(err, rows) {
-        callback(rows);
+exports.mytickets = function (username, callback) {
+    db.all("SELECT * FROM TICKET WHERE USER=?", [username], function (err, rows) {
+        callback(rows,null);
     });
 }
 
-exports.users = function(callback)
-{
-    db.all("SELECT * FROM USER", function(err, rows) {
-        callback(rows);
+exports.users = function (callback) {
+    db.all("SELECT * FROM USER", function (err, rows) {
+        callback(rows,null);
     });
 }
