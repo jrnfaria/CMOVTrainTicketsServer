@@ -42,6 +42,13 @@ module.exports = function (app) {
         });
     });
 
+    app.get('/timetable', function (req, res) {
+
+        requests.timetable(function (found,err) {
+            res.send(createResponse(found, err));
+        });
+    });
+
     app.post('/buyticket', function (req, res) {
         var id = req.body.id;
         var departure = req.body.departure;
