@@ -19,7 +19,6 @@ if (!exists) {
 var userAlreadyExists = function (username) {
     db.all("SELECT * FROM USER WHERE USERNAME=?", [username], function (err, rows) {
         if (err) {
-            console.log(err);
             return true;
         } else
             return !rows.length == 0;
@@ -27,40 +26,38 @@ var userAlreadyExists = function (username) {
 }
 
 exports.signup = function (name, username, password, creditcardtype, creditcardnumber, creditcardvalidity, callback) {
-   
-   if(userAlreadyExists(username))
-   {
-    var stmt = db.prepare("INSERT INTO USER VALUES ($name, $username, $password)");
-    stmt.bind({
-        $name: name,
-        $username: username,
-        $password: password
-    });
-    stmt.run();
-    stmt.finalize();
-    stmt = db.prepare("INSERT INTO CREDITCARD VALUES ($creditcardtype, $creditcardnumber, $creditcardvalidity, $username)");
-    stmt.bind({
-        $creditcardtype: creditcardtype,
-        $creditcardnumber: creditcardnumber,
-        $creditcardvalidity: creditcardvalidity,
-        $username: username
-    });
-    stmt.run();
-    stmt.finalize();
 
-    callback({
-        'response': "OK"
-    },null);
-   }
-   else
-   {
-    callback(null,{
-        'response': "Username already exists"
-    });
-   }
+    if(userAlreadyExists(username))
+    {
+        var stmt = db.prepare("INSERT INTO USER VALUES ($name, $username, $password)");
+        stmt.bind({
+            $name: name,
+            $username: username,
+            $password: password
+        });
+        stmt.run();
+        stmt.finalize();
+        stmt = db.prepare("INSERT INTO CREDITCARD VALUES ($creditcardtype, $creditcardnumber, $creditcardvalidity, $username)");
+        stmt.bind({
+            $creditcardtype: creditcardtype,
+            $creditcardnumber: creditcardnumber,
+            $creditcardvalidity: creditcardvalidity,
+            $username: username
+        });
+        stmt.run();
+        stmt.finalize();
+
+        callback({
+            'response': "OK"
+        },null);
+    }
+    else
+    {
+        callback(null,{
+            'response': "Username already exists"
+        });
+    }
 }
-
-
 
 exports.signin = function (username, password, callback) {
     this.users(function (users) {
@@ -76,9 +73,9 @@ exports.signin = function (username, password, callback) {
                 'response': "OK"
             },null);
         else
-            callback(null,{
-                'response': "Username or password incorrect"
-            });
+            callback({
+                'response': "Wrong username or password"
+            },null);
     });
 }
 
@@ -100,14 +97,33 @@ exports.buyticket = function (id, departure, arrival, train, departuredate, user
     },null);
 }
 
+exports.validateticket = function (ticketid, callback) {
+    this.ticket(ticketid, function (tickets) {
+        if (tickets.length == 1)
+            callback({
+                'response': "OK"
+            },null);
+        else
+            callback({
+                'response': "Ticket not found"
+            },null);
+    });
+}
+
+exports.users = function (callback) {
+    db.all("SELECT * FROM USER", function (err, rows) {
+        callback(rows,null);
+    });
+}
+
 exports.mytickets = function (username, callback) {
     db.all("SELECT * FROM TICKET WHERE USER=?", [username], function (err, rows) {
         callback(rows,null);
     });
 }
 
-exports.users = function (callback) {
-    db.all("SELECT * FROM USER", function (err, rows) {
+exports.ticket = function (ticketid, callback) {
+    db.all("SELECT * FROM TICKET WHERE TICKETID=?", [ticketid], function (err, rows) {
         callback(rows,null);
     });
 }

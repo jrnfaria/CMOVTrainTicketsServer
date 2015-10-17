@@ -33,8 +33,6 @@ module.exports = function (app) {
         });
     });
 
-
-
     app.post('/signin', function (req, res) {
         var username = req.body.username;
         var password = req.body.password;
@@ -43,8 +41,6 @@ module.exports = function (app) {
             res.send(createResponse(found, err));
         });
     });
-
-
 
     app.post('/buyticket', function (req, res) {
         var id = req.body.id;
@@ -62,14 +58,22 @@ module.exports = function (app) {
     app.post('/mytickets', function (req, res) {
         var username = req.body.username;
 
-        requests.mytickets(username, function (found) {
-            res.json(found);
+        requests.mytickets(username, function (found, err) {
+            res.json(createResponse(found, err));
+        });
+    });
+
+    app.post('/validateticket', function (req, res) {
+        var ticketid = req.body.ticketid;
+
+        requests.validateticket(ticketid, function (found, err) {
+            res.json(createResponse(found, err));
         });
     });
 
     app.get('/users', function (req, res) {
-        requests.users(function (found) {
-            res.json(found);
+        requests.users(function (found, err) {
+            res.json(createResponse(found, err));
         });
     });
 };
