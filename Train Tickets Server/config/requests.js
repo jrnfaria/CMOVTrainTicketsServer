@@ -80,8 +80,10 @@ exports.signin = function (username, password, callback) {
 //get timetable
 exports.timetable = function (callback) {
     async.parallel([
-            timetableAux.bind('timetableId', 1)
-    
+            timetableAux.bind('timetableId', 1),
+            timetableAux.bind('timetableId', 2),
+            timetableAux.bind('timetableId', 3),
+            timetableAux.bind('timetableId', 4)
         ],
         function (err, obj) { //This is the final callback
             console.log(obj);
@@ -92,29 +94,40 @@ exports.timetable = function (callback) {
 
 var timetableAux = function (timetableId, callback) {
 
-    db.all("SELECT TIMETABLE.NAME AS route,STATION.NAME AS stationName,TIMETABLESTATION.PASSTIME AS passtime FROM TIMETABLE,STATION,TIMETABLESTATION WHERE TIMETABLE.ID=? AND TIMETABLESTATION.TIMETABLEID=TIMETABLE.ID AND TIMETABLESTATION.STATIONID=STATION.ID ORDER BY passtime", [timetableId], function (err, route) {
+    db.all("SELECT TIMETABLE.NAME AS route,STATION.NAME AS stationName,TIMETABLESTATION.PASSTIME AS passTime FROM TIMETABLE,STATION,TIMETABLESTATION WHERE TIMETABLE.ID=? AND TIMETABLESTATION.TIMETABLEID=TIMETABLE.ID AND TIMETABLESTATION.STATIONID=STATION.ID ORDER BY passTime", [timetableId], function (err, route) {
         console.log(route);
-        db.all("SELECT TRAIN.NAME AS trainName,TRAINTIMETABLE.HOUR AS hour,TRAINTIMETABLE.MINUTE AS minute FROM TRAIN,TIMETABLE,TRAINTIMETABLE WHERE TIMETABLE.ID=? AND TRAINTIMETABLE.TIMETABLEID=TIMETABLE.ID AND TRAINTIMETABLE.TRAINID=TRAIN.ID ORDER BY hour", [timetableId], function (err, trains) {
-           var processedTrains= new Array();
+        db.all("SELECT TRAIN.NAME AS trainName,TRAINTIMETABLE.STARTTIME AS startTime FROM TRAIN,TIMETABLE,TRAINTIMETABLE WHERE TIMETABLE.ID=? AND TRAINTIMETABLE.TIMETABLEID=TIMETABLE.ID AND TRAINTIMETABLE.TRAINID=TRAIN.ID ORDER BY date(startTime)", [timetableId], function (err, trains) {
+            var processedTrains = new Array();
 
-            for (var i=0;i<trains.length;i++)
-            {
-                var stations={'name':trains[i].trainName,'stations':[]};
+            for (var i = 0; i < trains.length; i++) {
+                var stations = {
+                    'name': trains[i].trainName,
+                    'stations': []
+                };
 
+                //get and convert time
+                var split = trains[i].startTime.split(":");
 
-                for(var j=0;j<route.length;j++)
-                {
-                    
-                    var station={'name':route[j].stationName,'time':route[j].passtime};
+                var startTime = new Date(0, 0, 0, split[0], split[1], 0, 0);
+
+                for (var j = 0; j < route.length; j++) {
+
+                    var passTime = new Date(startTime);
+                    passTime.setMinutes(passTime.getMinutes() + route[j].passTime % 60);
+                    passTime.setHours(parseInt(passTime.getHours()) + route[j].passTime / 60);
+
+                    var station = {
+                        'name': route[j].stationName,
+                        'time': (passTime.getHours() + ":" + passTime.getMinutes())
+                    };
                     stations.stations.push(station);
                 }
                 processedTrains.push(stations);
             }
-
-
-            var obj= {'route':route[0].route,'trains':trains};
-
-            callback(null, {'route':route[0].route,'trains':processedTrains});
+            callback(null, {
+                'route': route[0].route,
+                'trains': processedTrains
+            });
         });
     });
 
