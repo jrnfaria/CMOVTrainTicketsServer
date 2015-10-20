@@ -95,8 +95,8 @@ exports.timetable = function (callback) {
 var timetableAux = function (timetableId, callback) {
 
     db.all("SELECT TIMETABLE.NAME AS route,STATION.NAME AS stationName,TIMETABLESTATION.PASSTIME AS passTime FROM TIMETABLE,STATION,TIMETABLESTATION WHERE TIMETABLE.ID=? AND TIMETABLESTATION.TIMETABLEID=TIMETABLE.ID AND TIMETABLESTATION.STATIONID=STATION.ID ORDER BY passTime", [timetableId], function (err, route) {
-        console.log(route);
-        db.all("SELECT TRAIN.NAME AS trainName,TRAINTIMETABLE.STARTTIME AS startTime FROM TRAIN,TIMETABLE,TRAINTIMETABLE WHERE TIMETABLE.ID=? AND TRAINTIMETABLE.TIMETABLEID=TIMETABLE.ID AND TRAINTIMETABLE.TRAINID=TRAIN.ID ORDER BY date(startTime)", [timetableId], function (err, trains) {
+        // console.log(route);
+        db.all("SELECT TRAIN.NAME AS trainName,TRAINTIMETABLE.STARTTIME AS startTime FROM TRAIN,TIMETABLE,TRAINTIMETABLE WHERE TIMETABLE.ID=? AND TRAINTIMETABLE.TIMETABLEID=TIMETABLE.ID AND TRAINTIMETABLE.TRAINID=TRAIN.ID ORDER BY datetime(startTime) ASC", [timetableId], function (err, trains) {
             var processedTrains = new Array();
 
             for (var i = 0; i < trains.length; i++) {
@@ -130,10 +130,6 @@ var timetableAux = function (timetableId, callback) {
             });
         });
     });
-
-
-
-
 }
 
 
