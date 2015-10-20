@@ -1,6 +1,7 @@
 var request = require('request');
 
 var fs = require("fs");
+var opt = require("./../settings.json");
 var file = "traintickets.db";
 var exists = fs.existsSync(file);
 var async = require("async");
@@ -86,8 +87,15 @@ exports.timetable = function (callback) {
             timetableAux.bind('timetableId', 4)
         ],
         function (err, obj) { //This is the final callback
-            console.log(obj);
-            callback(obj);
+            if (err) {
+                callback(null, {
+                    "response": err
+                });
+            } else {
+                callback({
+                    "response": obj
+                }, null);
+            }
         })
 
 }
@@ -133,7 +141,32 @@ var timetableAux = function (timetableId, callback) {
 }
 
 
-exports.buyticket = function (id, departure, arrival, train, departuredate, username, callback) {
+exports.buyTicket = function (id, departure, arrival, train, departuredate, username, callback) {
+
+    //see if station exist and get id done
+    //train
+    //start date
+    //create ticket
+
+
+    async.series([
+            trainExists.bind('train', train),
+            stationsExists.bind('departure', departure).bind('arrival', arrival),
+            buyTicketAux.bind('id', id).bind('departure', departure).bind('arrival', arrival).bind('train', train).bind('departuredate', departuredate).bind('username', username)
+        ],
+        function (err, obj) { //This is the final callback
+            if (err) {
+                callback(null, {
+                    "response": err
+                });
+            } else {
+                callback(obj[2], null);
+            }
+        });
+}
+
+var buyTicketAux = function (id, departure, arrival, train, departuredate, username, callback) {
+
     var stmt = db.prepare("INSERT INTO TICKET (TICKETID,DEPARTURE,ARRIVAL,TRAIN,DEPARTUREDATE,USER) VALUES ($id, $departure, $arrival, $train, $departuredate, $username)");
     stmt.bind({
         $id: id,
@@ -146,9 +179,31 @@ exports.buyticket = function (id, departure, arrival, train, departuredate, user
     stmt.run();
     stmt.finalize();
 
-    callback({
+    callback(null, {
         'response': "OK"
-    }, null);
+    });
+}
+
+
+var trainExists = function (train, callback) {
+    db.all("SELECT * FROM TRAIN WHERE TRAIN.NAME=?", [train], function (err, rows) {
+        if (rows.length == 0) {
+            callback("Train doesn't exist", null);
+        } else {
+            callback(null, null);
+        }
+    });
+}
+
+var stationsExists = function (departure, arrival, callback) {
+    db.all("SELECT * FROM STATION WHERE STATION.NAME=? OR STATION.NAME=?", [departure, arrival], function (err, rows) {
+        console.log(rows);
+        if (rows.length != 2) {
+            callback("One of the station doesn't exist", null);
+        } else {
+            callback(null, null);
+        }
+    });
 }
 
 exports.validateticket = function (ticketid, callback) {
