@@ -140,7 +140,7 @@ var timetableAux = function (timetableId, callback) {
     });
 }
 
-
+//a1       B1       T1
 exports.buyTicket = function (id, departure, arrival, train, departuredate, username, callback) {
 
     //see if station exist and get id done
@@ -152,7 +152,8 @@ exports.buyTicket = function (id, departure, arrival, train, departuredate, user
     async.series([
             trainExists.bind('train', train),
             stationsExists.bind('departure', departure).bind('arrival', arrival),
-            buyTicketAux.bind('id', id).bind('departure', departure).bind('arrival', arrival).bind('train', train).bind('departuredate', departuredate).bind('username', username)
+            checkCapacity.bind('departure', departure).bind('arrival', arrival).bind('departuredate', departuredate),
+            buyTicketAux.bind('id', id).bind('departure', departure).bind('arrival', arrival).bind('train', train).bind('departuredate', departuredate).bind('username', username),
         ],
         function (err, obj) { //This is the final callback
             if (err) {
@@ -160,7 +161,7 @@ exports.buyTicket = function (id, departure, arrival, train, departuredate, user
                     "response": err
                 });
             } else {
-                callback(obj[2], null);
+                callback(obj[3], null);
             }
         });
 }
@@ -184,6 +185,58 @@ var buyTicketAux = function (id, departure, arrival, train, departuredate, usern
     });
 }
 
+var checkCapacity = function (departure, arrival, departuredate, callback) {
+    //discovers timetable and stations and sees if capacity is good enought
+
+    db.all("SELECT TIMETABLEID AS timetable,STATIONID,TIMETABLESTATION.PASSTIME AS passTime,STATION.NAME AS stationName FROM STATION,TIMETABLE,TIMETABLESTATION WHERE (STATION.NAME=? OR STATION.NAME=?) AND STATION.ID=TIMETABLESTATION.STATIONID AND TIMETABLE.ID=TIMETABLESTATION.TIMETABLEID", [departure, arrival], function (err, rows) {
+        var timetableId = 0;
+        var passTime = 500;
+        var ended = false;
+        var i;
+        for (i = 0; i < rows.length; i++) {
+            if (rows[i].stationName == departure && rows[i].passTime < passTime) {
+                passTime = rows[i].passTime;
+                timetableId = rows[i].timetable;
+            }
+        }
+
+        var found = false;
+        var combs = new Array();
+
+        db.all("SELECT * FROM STATION,TIMETABLESTATION WHERE TIMETABLESTATION.TIMETABLEID=? AND TIMETABLESTATION.STATIONID=STATION.ID ORDER BY TIMETABLESTATION.PASSTIME", [timetableId], function (err, stations) {
+            for (i = 0; i < stations.length; i++) {
+                if (stations[i].NAME == departure) {
+                    found = true;
+                }
+                if (found) {
+                    for (j = 0; j < stations.length; j++) {
+                        if (j > i)
+                            combs.push({
+                                'departure': stations[i].NAME,
+                                'arrival': stations[j].NAME
+                            });
+                    }
+                }
+            }
+
+            async.forEach(combs, function (comb, callback1) {
+                db.all("SELECT * FROM TICKET WHERE DEPARTURE=? AND ARRIVAL=? AND DEPARTUREDATE=?", [comb.departure, comb.arrival, departuredate], function (err, rows) {
+                    console.log(rows.length);
+                    if (rows.length > opt.trainCapacity) {
+                        callback1("Train over capacity");
+                    } else {
+                        callback1(null);
+                    }
+                });
+            }, function (err) {
+                console.log(err);
+                if (err) callback(err, null);
+                else
+                    callback(null, null);
+            });
+        });
+    });
+}
 
 var trainExists = function (train, callback) {
     db.all("SELECT * FROM TRAIN WHERE TRAIN.NAME=?", [train], function (err, rows) {
@@ -197,7 +250,6 @@ var trainExists = function (train, callback) {
 
 var stationsExists = function (departure, arrival, callback) {
     db.all("SELECT * FROM STATION WHERE STATION.NAME=? OR STATION.NAME=?", [departure, arrival], function (err, rows) {
-        console.log(rows);
         if (rows.length != 2) {
             callback("One of the station doesn't exist", null);
         } else {
