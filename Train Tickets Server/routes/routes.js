@@ -72,8 +72,9 @@ module.exports = function (app) {
 
     app.post('/validateticket', function (req, res) {
         var ticketid = req.body.ticketid;
+        var deviceid = req.body.deviceid;
 
-        requests.validateticket(ticketid, function (found, err) {
+        requests.validateticket(ticketid, deviceid, function (found, err) {
             res.json(createResponse(found, err));
         });
     });

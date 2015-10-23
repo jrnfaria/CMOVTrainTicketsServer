@@ -103,7 +103,6 @@ exports.timetable = function (callback) {
 var timetableAux = function (timetableId, callback) {
 
     db.all("SELECT TIMETABLE.NAME AS route,STATION.NAME AS stationName,TIMETABLESTATION.PASSTIME AS passTime FROM TIMETABLE,STATION,TIMETABLESTATION WHERE TIMETABLE.ID=? AND TIMETABLESTATION.TIMETABLEID=TIMETABLE.ID AND TIMETABLESTATION.STATIONID=STATION.ID ORDER BY passTime", [timetableId], function (err, route) {
-        // console.log(route);
         db.all("SELECT TRAIN.NAME AS trainName,TRAINTIMETABLE.STARTTIME AS startTime FROM TRAIN,TIMETABLE,TRAINTIMETABLE WHERE TIMETABLE.ID=? AND TRAINTIMETABLE.TIMETABLEID=TIMETABLE.ID AND TRAINTIMETABLE.TRAINID=TRAIN.ID ORDER BY datetime(startTime) ASC", [timetableId], function (err, trains) {
             var processedTrains = new Array();
 
@@ -143,7 +142,7 @@ var timetableAux = function (timetableId, callback) {
 //a1       B1       T1
 exports.buyTicket = function (id, departure, arrival, train, departuredate, username, callback) {
 
-    //see if station exist and get id done
+    //see if station exists and gets id done
     //train
     //start date
     //create ticket
@@ -185,9 +184,8 @@ var buyTicketAux = function (id, departure, arrival, train, departuredate, usern
     });
 }
 
+//discovers timetable and stations and checks if capacity is good enough
 var checkCapacity = function (departure, arrival, departuredate, callback) {
-    //discovers timetable and stations and sees if capacity is good enought
-
     db.all("SELECT TIMETABLEID AS timetable,STATIONID,TIMETABLESTATION.PASSTIME AS passTime,STATION.NAME AS stationName FROM STATION,TIMETABLE,TIMETABLESTATION WHERE (STATION.NAME=? OR STATION.NAME=?) AND STATION.ID=TIMETABLESTATION.STATIONID AND TIMETABLE.ID=TIMETABLESTATION.TIMETABLEID", [departure, arrival], function (err, rows) {
         var timetableId = 0;
         var passTime = 500;
@@ -221,7 +219,6 @@ var checkCapacity = function (departure, arrival, departuredate, callback) {
 
             async.forEach(combs, function (comb, callback1) {
                 db.all("SELECT * FROM TICKET WHERE DEPARTURE=? AND ARRIVAL=? AND DEPARTUREDATE=?", [comb.departure, comb.arrival, departuredate], function (err, rows) {
-                    console.log(rows.length);
                     if (rows.length > opt.trainCapacity) {
                         callback1("Train over capacity");
                     } else {
@@ -229,10 +226,12 @@ var checkCapacity = function (departure, arrival, departuredate, callback) {
                     }
                 });
             }, function (err) {
-                console.log(err);
-                if (err) callback(err, null);
-                else
+                if (err) {
+                    callback(err, null);
+                }
+                else {
                     callback(null, null);
+                }
             });
         });
     });
@@ -251,23 +250,51 @@ var trainExists = function (train, callback) {
 var stationsExists = function (departure, arrival, callback) {
     db.all("SELECT * FROM STATION WHERE STATION.NAME=? OR STATION.NAME=?", [departure, arrival], function (err, rows) {
         if (rows.length != 2) {
-            callback("One of the station doesn't exist", null);
+            callback("One of the stations doesn't exist", null);
         } else {
             callback(null, null);
         }
     });
 }
 
-exports.validateticket = function (ticketid, callback) {
-    this.ticket(ticketid, function (tickets) {
-        if (tickets.length == 1)
-            callback({
-                'response': "OK"
-            }, null);
-        else
+exports.validateticket = function (ticketid, deviceid, callback) {
+    exports.ticket(ticketid, function (tickets) {
+        if (tickets.length == 1) {
+            exports.validation(ticketid, function (validations) {
+                if(validations.length == 0) {
+                    var stmt = db.prepare("INSERT INTO VALIDATION (TICKETID, DEVICEID) VALUES ($ticketId, $deviceId)");
+                    stmt.bind({
+                        $ticketId: ticketid,
+                        $deviceId: deviceid
+                    });
+                    stmt.run();
+                    stmt.finalize();
+
+                    callback({
+                        'response': "OK"
+                    }, null);
+                    }
+                else {
+                    if(validations.length == 1) {
+                        if(validations[0].DEVICEID == deviceid) {
+                            callback({
+                                'response': "OK"
+                            }, null);
+                        }
+                        else {
+                            callback({
+                                'response': "Ticket already validated with another device"
+                            }, null);
+                        }
+                    }
+                }
+            });
+        }
+        else {
             callback({
                 'response': "Ticket not found"
             }, null);
+        }
     });
 }
 
@@ -285,6 +312,12 @@ exports.mytickets = function (username, callback) {
 
 exports.ticket = function (ticketid, callback) {
     db.all("SELECT * FROM TICKET WHERE TICKETID=?", [ticketid], function (err, rows) {
+        callback(rows, null);
+    });
+}
+
+exports.validation = function (ticketid, callback) {
+    db.all("SELECT * FROM VALIDATION WHERE TICKETID=?", [ticketid], function (err, rows) {
         callback(rows, null);
     });
 }
