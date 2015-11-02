@@ -1,5 +1,6 @@
 {
-	"port":8080,
-	"quantity":40,
-	"trainCapacity":40
+    "port": 8080,
+    "quantity": 40,
+    "trainCapacity": 40
+
 }

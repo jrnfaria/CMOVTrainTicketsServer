@@ -5,6 +5,14 @@ var opt = require("./../settings.json");
 var file = "traintickets.db";
 var exists = fs.existsSync(file);
 var async = require("async");
+var NodeRSA = require('node-rsa');
+
+var key = new NodeRSA({
+    b: 368
+});
+
+key.importKey(key.exportKey());
+
 
 var sqlite3 = require("sqlite3").verbose();
 var db = new sqlite3.Database(file);
@@ -143,16 +151,18 @@ var timetableAux = function (timetableId, callback) {
 exports.buyTicket = function (id, departure, arrival, train, departuredate, username, callback) {
 
     //see if station exists and gets id done
+    //see if date is valide
     //train
     //start date
     //create ticket
 
-
+    var date = new Date(departuredate);
     async.series([
+            dateExists.bind('date', departuredate).bind('station', departure),
             trainExists.bind('train', train),
-            stationsExists.bind('departure', departure).bind('arrival', arrival),
-            checkCapacity.bind('departure', departure).bind('arrival', arrival).bind('departuredate', departuredate),
-            buyTicketAux.bind('id', id).bind('departure', departure).bind('arrival', arrival).bind('train', train).bind('departuredate', departuredate).bind('username', username),
+            stationsExists.bind('departure', departure).bind('arrival', arrival).bind('date', date),
+            checkCapacity.bind('departure', departure).bind('arrival', arrival).bind('departuredate', date),
+            buyTicketAux.bind('id', id).bind('departure', departure).bind('arrival', arrival).bind('train', train).bind('departuredate', date).bind('username', username),
         ],
         function (err, obj) { //This is the final callback
             if (err) {
@@ -160,9 +170,22 @@ exports.buyTicket = function (id, departure, arrival, train, departuredate, user
                     "response": err
                 });
             } else {
-                callback(obj[3], null);
+                callback(obj[4], null);
             }
         });
+}
+
+var dateExists = function (date, station, callback) {
+    var pDate = new Date(date);
+
+    var now = new Date();
+    if (isNaN(pDate)) {
+        callback("Invalid date", null);
+    } else if (pDate < now) {
+        callback("Date already passed", null);
+    } else {
+        callback(null, null);
+    }
 }
 
 var buyTicketAux = function (id, departure, arrival, train, departuredate, username, callback) {
@@ -186,6 +209,7 @@ var buyTicketAux = function (id, departure, arrival, train, departuredate, usern
 
 //discovers timetable and stations and checks if capacity is good enough
 var checkCapacity = function (departure, arrival, departuredate, callback) {
+    //first discovers timetable
     db.all("SELECT TIMETABLEID AS timetable,STATIONID,TIMETABLESTATION.PASSTIME AS passTime,STATION.NAME AS stationName FROM STATION,TIMETABLE,TIMETABLESTATION WHERE (STATION.NAME=? OR STATION.NAME=?) AND STATION.ID=TIMETABLESTATION.STATIONID AND TIMETABLE.ID=TIMETABLESTATION.TIMETABLEID", [departure, arrival], function (err, rows) {
         var timetableId = 0;
         var passTime = 500;
@@ -218,7 +242,19 @@ var checkCapacity = function (departure, arrival, departuredate, callback) {
             }
 
             async.forEach(combs, function (comb, callback1) {
-                db.all("SELECT * FROM TICKET WHERE DEPARTURE=? AND ARRIVAL=? AND DEPARTUREDATE=?", [comb.departure, comb.arrival, departuredate], function (err, rows) {
+                var passTime = 0
+
+                for (var i = 0; i < stations.length; i++) {
+                    if (stations[i].NAME == comb.departure) {
+                        passTime = stations[i].PASSTIME;
+                        break;
+                    }
+                }
+                var pDate = new Date(departuredate);
+                pDate.setMinutes(pDate.getMinutes() + passTime % 60);
+                pDate.setHours(parseInt(pDate.getHours()) + passTime / 60);
+
+                db.all("SELECT * FROM TICKET WHERE DEPARTURE=? AND ARRIVAL=? AND DEPARTUREDATE=?", [comb.departure, comb.arrival, pDate], function (err, rows) {
                     if (rows.length > opt.trainCapacity) {
                         callback1("Train over capacity");
                     } else {
@@ -228,8 +264,7 @@ var checkCapacity = function (departure, arrival, departuredate, callback) {
             }, function (err) {
                 if (err) {
                     callback(err, null);
-                }
-                else {
+                } else {
                     callback(null, null);
                 }
             });
@@ -247,21 +282,53 @@ var trainExists = function (train, callback) {
     });
 }
 
-var stationsExists = function (departure, arrival, callback) {
-    db.all("SELECT * FROM STATION WHERE STATION.NAME=? OR STATION.NAME=?", [departure, arrival], function (err, rows) {
-        if (rows.length != 2) {
+var stationsExists = function (departure, arrival, date, callback) {
+    db.all("SELECT STATION.NAME AS stationName,STARTTIME AS startTime,PASSTIME AS passTime FROM STATION,TIMETABLESTATION,TIMETABLE,TRAINTIMETABLE WHERE (STATION.NAME=? OR STATION.NAME=?) AND TIMETABLESTATION.STATIONID=STATION.ID AND TRAINTIMETABLE.TIMETABLEID =TIMETABLE.ID AND TIMETABLESTATION.TIMETABLEID=TIMETABLE.ID", [departure, arrival], function (err, stations) {
+
+        if (stations.length < 2) {
             callback("One of the stations doesn't exist", null);
         } else {
-            callback(null, null);
+            var validDeparture = false,
+                validArrival = false;
+            var pDate = new Date(date);
+
+            var split, time
+
+            for (var i = 0; i < stations.length; i++) {
+                if (departure == stations[i].stationName) {
+                    split = stations[i].startTime.split(":");
+                    time = new Date(0, 0, 0, split[0], split[1], 0, 0);
+                    time.setMinutes(time.getMinutes() + stations[i].passTime % 60);
+                    time.setHours(parseInt(time.getHours()) + stations[i].passTime / 60);
+
+
+                    if (pDate.getHours() == time.getHours() && pDate.getMinutes() == time.getMinutes()) {
+                        validDeparture = true;
+                    }
+
+                } else if (arrival == stations[i].stationName) {
+                    validArrival = true;
+                }
+                if (validArrival && validDeparture) {
+                    break;
+                }
+            }
+
+            if (validArrival && validDeparture) {
+                callback(null, null);
+            } else {
+                callback('Invalid station', null);
+            }
         }
     });
+
 }
 
 exports.validateticket = function (ticketid, deviceid, callback) {
     exports.ticket(ticketid, function (tickets) {
         if (tickets.length == 1) {
             exports.validation(ticketid, function (validations) {
-                if(validations.length == 0) {
+                if (validations.length == 0) {
                     var stmt = db.prepare("INSERT INTO VALIDATION (TICKETID, DEVICEID) VALUES ($ticketId, $deviceId)");
                     stmt.bind({
                         $ticketId: ticketid,
@@ -273,15 +340,13 @@ exports.validateticket = function (ticketid, deviceid, callback) {
                     callback({
                         'response': "OK"
                     }, null);
-                    }
-                else {
-                    if(validations.length == 1) {
-                        if(validations[0].DEVICEID == deviceid) {
+                } else {
+                    if (validations.length == 1) {
+                        if (validations[0].DEVICEID == deviceid) {
                             callback({
                                 'response': "OK"
                             }, null);
-                        }
-                        else {
+                        } else {
                             callback({
                                 'response': "Ticket already validated with another device"
                             }, null);
@@ -289,8 +354,7 @@ exports.validateticket = function (ticketid, deviceid, callback) {
                     }
                 }
             });
-        }
-        else {
+        } else {
             callback({
                 'response': "Ticket not found"
             }, null);
@@ -311,6 +375,12 @@ exports.mytickets = function (username, callback) {
 }
 
 exports.ticket = function (ticketid, callback) {
+    db.all("SELECT * FROM TICKET WHERE TICKETID=?", [ticketid], function (err, rows) {
+        callback(rows, null);
+    });
+}
+
+exports.tickets = function (firstStation, lastStation, date, callback) {
     db.all("SELECT * FROM TICKET WHERE TICKETID=?", [ticketid], function (err, rows) {
         callback(rows, null);
     });
