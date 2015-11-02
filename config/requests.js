@@ -148,7 +148,7 @@ var timetableAux = function (timetableId, callback) {
 }
 
 //a1       B1       T1
-exports.buyTicket = function (id, departure, arrival, train, departuredate, username, callback) {
+exports.buyTicket = function (id, departure, arrival, departuredate, username, callback) {
 
     //see if station exists and gets id done
     //see if date is valide
@@ -159,10 +159,9 @@ exports.buyTicket = function (id, departure, arrival, train, departuredate, user
     var date = new Date(departuredate);
     async.series([
             dateExists.bind('date', departuredate).bind('station', departure),
-            trainExists.bind('train', train),
             stationsExists.bind('departure', departure).bind('arrival', arrival).bind('date', date),
             checkCapacity.bind('departure', departure).bind('arrival', arrival).bind('departuredate', date),
-            buyTicketAux.bind('id', id).bind('departure', departure).bind('arrival', arrival).bind('train', train).bind('departuredate', date).bind('username', username),
+            buyTicketAux.bind('id', id).bind('departure', departure).bind('arrival', arrival).bind('departuredate', date).bind('username', username),
         ],
         function (err, obj) { //This is the final callback
             if (err) {
@@ -170,7 +169,7 @@ exports.buyTicket = function (id, departure, arrival, train, departuredate, user
                     "response": err
                 });
             } else {
-                callback(obj[4], null);
+                callback(obj[3], null);
             }
         });
 }
@@ -188,23 +187,40 @@ var dateExists = function (date, station, callback) {
     }
 }
 
-var buyTicketAux = function (id, departure, arrival, train, departuredate, username, callback) {
+var buyTicketAux = function (id, departure, arrival, departuredate, username, callback) {
 
-    var stmt = db.prepare("INSERT INTO TICKET (TICKETID,DEPARTURE,ARRIVAL,TRAIN,DEPARTUREDATE,USER) VALUES ($id, $departure, $arrival, $train, $departuredate, $username)");
-    stmt.bind({
-        $id: id,
-        $departure: departure,
-        $arrival: arrival,
-        $train: train,
-        $departuredate: departuredate,
-        $username: username
-    });
-    stmt.run();
-    stmt.finalize();
+    var date = new Date(departure);
 
-    callback(null, {
-        'response': "OK"
+    db.all("SELECT TIMETABLEID AS timetable,STATIONID,TIMETABLESTATION.PASSTIME AS passTime,STATION.NAME AS stationName FROM STATION,TIMETABLE,TIMETABLESTATION WHERE STATION.NAME=? AND STATION.ID=TIMETABLESTATION.STATIONID AND TIMETABLE.ID=TIMETABLESTATION.TIMETABLEID", [departure], function (err, rows) {
+        var selected;
+        selected = rows[0];
+        for (var i = 0; i < rows.length; i++) {
+            if (rows[i].passTime < selected) {
+                selected = rows[i];
+            }
+        }
+        db.all("SELECT TRAIN.NAME AS trainName FROM TRAIN,TRAINTIMETABLE WHERE TRAINTIMETABLE.TIMETABLEID=? AND TRAIN.ID=TRAINTIMETABLE.TRAINID", [selected.timetable], function (err, train) {
+
+            var stmt = db.prepare("INSERT INTO TICKET (TICKETID,DEPARTURE,ARRIVAL,TRAIN,DEPARTUREDATE,USER) VALUES ($id, $departure, $arrival, $train, $departuredate, $username)");
+            stmt.bind({
+                $id: id,
+                $departure: departure,
+                $arrival: arrival,
+                $train: train[0].trainName,
+                $departuredate: departuredate,
+                $username: username
+            });
+            stmt.run();
+            stmt.finalize();
+
+            callback(null, {
+                'response': "OK"
+            });
+        });
     });
+
+
+
 }
 
 //discovers timetable and stations and checks if capacity is good enough
@@ -390,7 +406,7 @@ exports.tickets = function (timetableId, departureDate, callback) {
         callback(null, 'Invalid date');
     } else {
         var combs = new Array();
-       
+
 
         db.all("SELECT * FROM STATION,TIMETABLESTATION WHERE TIMETABLESTATION.TIMETABLEID=? AND TIMETABLESTATION.STATIONID=STATION.ID ORDER BY TIMETABLESTATION.PASSTIME", [timetableId], function (err, stations) {
             for (i = 0; i < stations.length; i++) {
@@ -408,11 +424,12 @@ exports.tickets = function (timetableId, departureDate, callback) {
                 }
             }
 
-            var res=new Array();
+            var res = new Array();
             async.forEach(combs, function (comb, callback1) {
-                db.all("SELECT * FROM TICKET WHERE TICKET.DEPARTURE=? AND TICKET.ARRIVAL=? AND DEPARTUREDATE=?", [comb.departure, comb.arrival, date], function (err, rows) {
-                   
-                    res=res.concat(rows);
+
+                db.all("SELECT * FROM TICKET WHERE TICKETID NOT IN (SELECT TICKETID FROM VALIDATION) AND TICKET.DEPARTURE=? AND TICKET.ARRIVAL=? AND DEPARTUREDATE=?", [comb.departure, comb.arrival, date], function (err, rows) {
+
+                    res = res.concat(rows);
                     callback1(null, rows);
                 });
 
