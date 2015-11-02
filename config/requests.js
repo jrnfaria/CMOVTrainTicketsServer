@@ -380,10 +380,52 @@ exports.ticket = function (ticketid, callback) {
     });
 }
 
-exports.tickets = function (firstStation, lastStation, date, callback) {
-    db.all("SELECT * FROM TICKET WHERE TICKETID=?", [ticketid], function (err, rows) {
-        callback(rows, null);
-    });
+exports.tickets = function (timetableId, departureDate, callback) {
+
+    console.log(timetableId);
+    console.log(departureDate);
+    var date = new Date(departureDate);
+
+    if (isNaN(date)) {
+        callback(null, 'Invalid date');
+    } else {
+        var combs = new Array();
+       
+
+        db.all("SELECT * FROM STATION,TIMETABLESTATION WHERE TIMETABLESTATION.TIMETABLEID=? AND TIMETABLESTATION.STATIONID=STATION.ID ORDER BY TIMETABLESTATION.PASSTIME", [timetableId], function (err, stations) {
+            for (i = 0; i < stations.length; i++) {
+                for (j = 0; j < stations.length; j++) {
+                    if (j > i) {
+                        var depDate = new Date(date);
+                        depDate.setMinutes(date.getMinutes() + stations[i].PASSTIME);
+
+                        combs.push({
+                            'departure': stations[i].NAME,
+                            'arrival': stations[j].NAME,
+                            'date': depDate
+                        });
+                    }
+                }
+            }
+
+            var res=new Array();
+            async.forEach(combs, function (comb, callback1) {
+                db.all("SELECT * FROM TICKET WHERE TICKET.DEPARTURE=? AND TICKET.ARRIVAL=? AND DEPARTUREDATE=?", [comb.departure, comb.arrival, date], function (err, rows) {
+                   
+                    res=res.concat(rows);
+                    callback1(null, rows);
+                });
+
+            }, function (err) {
+                if (err) {
+                    console.log('err');
+                    callback(null, err);
+                } else {
+                    callback(res, null);
+                }
+            });
+        });
+    }
 }
 
 exports.validation = function (ticketid, callback) {

@@ -85,9 +85,13 @@ module.exports = function (app) {
         });
     });
 
-   /* app.post('/tickets', function (req, res) {
-        requests.tickets(function (found, err) {
+    app.get('/tickets', function (req, res) {
+
+        var timetableId = req.query.timetableId;
+        var date = req.query.departureDate;
+
+        requests.tickets(timetableId, date,function (found, err) {
             res.json(createResponse(found, err));
         });
-    });*/
+    });
 };
