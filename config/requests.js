@@ -342,7 +342,23 @@ var stationsExists = function (departure, arrival, date, callback) {
 
 }
 
-exports.validateticket = function (ticketid, deviceid, callback) {
+exports.validateTickets = function (tickets, callback) {
+    async.forEach(tickets, function (ticket, callback1) {
+        console.log(ticket);
+
+        module.exports.validateTicket(ticket.ticketId, ticket.deviceId, function (resp, err) {
+            callback1(err,resp);
+        });
+    }, function (err) {
+        if (err) {
+            callback(err, null);
+        } else {
+            callback('ok', null);
+        }
+    });
+}
+
+exports.validateTicket = function (ticketid, deviceid, callback) {
     exports.ticket(ticketid, function (tickets) {
         if (tickets.length == 1) {
             exports.validation(ticketid, function (validations) {
@@ -460,7 +476,7 @@ exports.statistics = function (callback) {
             mostUsedDepStation: mostUsedDepStation,
             mostUsedArrStation: mostUsedArrStation,
             mostUsedTrain: mostUsedTrain,
-            numUsers:numUsers
+            numUsers: numUsers
         },
         function (err, obj) { //This is the final callback
             if (err) {
@@ -477,7 +493,7 @@ var noShow = function (callback) {
     var now = new Date();
     db.all("SELECT * FROM VALIDATION", function (err, validation) {
         db.all("SELECT * FROM TICKET WHERE DEPARTUREDATE<?", [now], function (err, ticket) {
-            var number = 1-(validation.length / ticket.length);
+            var number = 1 - (validation.length / ticket.length);
 
             callback(null, number);
         });
@@ -494,9 +510,12 @@ var mostUsedDepStation = function (callback) {
             }
         }
         db.all("SELECT DEPARTURE,Count(*) AS count FROM TICKET", function (err, rows1) {
-            var prob=best.count/rows1[0].count;
+            var prob = best.count / rows1[0].count;
 
-            callback(null, {station:best.departure,prob:prob});
+            callback(null, {
+                station: best.departure,
+                prob: prob
+            });
         });
     });
 }
@@ -511,9 +530,12 @@ var mostUsedArrStation = function (callback) {
             }
         }
         db.all("SELECT ARRIVAL,Count(*) AS count FROM TICKET", function (err, rows1) {
-            var prob=best.count/rows1[0].count;
+            var prob = best.count / rows1[0].count;
 
-            callback(null, {station:best.arrival,prob:prob});
+            callback(null, {
+                station: best.arrival,
+                prob: prob
+            });
         });
     });
 }
@@ -528,9 +550,12 @@ var mostUsedTrain = function (callback) {
             }
         }
         db.all("SELECT Count(*) AS count FROM TICKET", function (err, rows1) {
-            var prob=best.count/rows1[0].count;
+            var prob = best.count / rows1[0].count;
 
-            callback(null, {train:best.train,prob:prob});
+            callback(null, {
+                train: best.train,
+                prob: prob
+            });
         });
     });
 }
