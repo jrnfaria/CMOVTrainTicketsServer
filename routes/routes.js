@@ -50,7 +50,6 @@ module.exports = function (app) {
     });
 
     app.post('/buyticket', function (req, res) {
-        var id = req.body.id;
         var departure = req.body.departure;
         var arrival = req.body.arrival;
         var departuredate = req.body.departuredate;
@@ -107,4 +106,13 @@ module.exports = function (app) {
             res.json(createResponse(found, err));
         });
     });
+
+    app.get('/exittime', function (req, res) {
+        var station=req.query.station;
+
+        requests.exitTime(station,function (found, err) {
+            res.json(createResponse(found, err));
+        });
+    });
 };
+ 

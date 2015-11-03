@@ -148,10 +148,9 @@ var timetableAux = function (timetableId, callback) {
 }
 
 exports.buyTicket = function (id, departure, arrival, departuredate, username, callback) {
-    var split=departuredate.split('/');
-    if(split.length==3)
-    {
-        departuredate=split[1]+'/'+split[0]+'/'+split[2];
+    var split = departuredate.split('/');
+    if (split.length == 3) {
+        departuredate = split[1] + '/' + split[0] + '/' + split[2];
     }
 
     var date = new Date(departuredate);
@@ -482,7 +481,9 @@ exports.statistics = function (callback) {
                     "response": err
                 });
             } else {
-                callback(obj, null);
+                callback({
+                    "response": obj
+                }, null);
             }
         });
 }
@@ -545,5 +546,41 @@ var mostUsedTrain = function (callback) {
 var numUsers = function (callback) {
     db.all("SELECT Count(*) AS count FROM USER", function (err, rows) {
         callback(null, rows[0].count);
+    });
+}
+
+
+exports.exitTime = function (station, callback) {
+
+    db.all("SELECT ID FROM STATION WHERE NAME=?", [station], function (err, stations) {
+        if (stations.length < 1) {
+            callback(null, "Station doesn't exist");
+        } else {
+            station = stations[0].ID;
+            db.all("SELECT TRAINTIMETABLE.STARTTIME AS startTime,TIMETABLESTATION.PASSTIME AS passTime,TIMETABLE.NAME AS timetableName  FROM TIMETABLESTATION,TIMETABLE,TRAINTIMETABLE,STATION WHERE STATION.ID=? AND TIMETABLESTATION.STATIONID=STATION.ID AND TIMETABLESTATION.TIMETABLEID=TRAINTIMETABLE.TIMETABLEID AND TIMETABLE.ID=TRAINTIMETABLE.TIMETABLEID ORDER BY timetableName", [station], function (err, rows) {
+                var rsp = {};
+                var name = rows[0].timetableName;
+                var arr = new Array();
+                var calcHelp=new Date();
+                var split;
+
+                for (var i = 0; i < rows.length; i++) {
+                    if (name != rows[i].timetableName) {
+                        rsp[name] = arr;
+
+                        name = rows[i].timetableName;
+                        arr = new Array();
+                    }
+                    split=rows[i].startTime.split(':');
+                    calcHelp.setHours(split[0]);
+                    calcHelp.setMinutes(split[1]+rows[i].passTime);
+
+                    arr.push(calcHelp.getHours()+':'+calcHelp.getMinutes());
+                }
+                rsp[name] = arr;
+                callback(rsp, null);
+            });
+        }
+
     });
 }
