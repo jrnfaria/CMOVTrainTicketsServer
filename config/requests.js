@@ -14,7 +14,6 @@ var key = new NodeRSA({
 
 key.importKey(key.exportKey());
 
-
 var sqlite3 = require("sqlite3").verbose();
 var db = new sqlite3.Database(file);
 
@@ -148,14 +147,12 @@ var timetableAux = function (timetableId, callback) {
     });
 }
 
-//a1       B1       T1
 exports.buyTicket = function (id, departure, arrival, departuredate, username, callback) {
-
-    //see if station exists and gets id done
-    //see if date is valide
-    //train
-    //start date
-    //create ticket
+    var split=departuredate.split('/');
+    if(split.length==3)
+    {
+        departuredate=split[1]+'/'+split[0]+'/'+split[2];
+    }
 
     var date = new Date(departuredate);
     async.series([
