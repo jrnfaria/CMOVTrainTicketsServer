@@ -93,4 +93,10 @@ module.exports = function (app) {
             res.json(createResponse(found, err));
         });
     });
+
+    app.get('/statistics', function (req, res) {
+        requests.statistics(function (found, err) {
+            res.json(createResponse(found, err));
+        });
+    });
 };

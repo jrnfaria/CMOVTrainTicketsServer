@@ -301,7 +301,9 @@ var trainExists = function (train, callback) {
 var stationsExists = function (departure, arrival, date, callback) {
     db.all("SELECT STATION.NAME AS stationName,STARTTIME AS startTime,PASSTIME AS passTime FROM STATION,TIMETABLESTATION,TIMETABLE,TRAINTIMETABLE WHERE (STATION.NAME=? OR STATION.NAME=?) AND TIMETABLESTATION.STATIONID=STATION.ID AND TRAINTIMETABLE.TIMETABLEID =TIMETABLE.ID AND TIMETABLESTATION.TIMETABLEID=TIMETABLE.ID", [departure, arrival], function (err, stations) {
 
-        if (stations.length < 2) {
+        if (departure == arrival) {
+            callback("The departure and arrival station are the same", null);
+        } else if (stations.length < 2) {
             callback("One of the stations doesn't exist", null);
         } else {
             var validDeparture = false,
@@ -448,5 +450,93 @@ exports.tickets = function (timetableId, departureDate, callback) {
 exports.validation = function (ticketid, callback) {
     db.all("SELECT * FROM VALIDATION WHERE TICKETID=?", [ticketid], function (err, rows) {
         callback(rows, null);
+    });
+}
+
+exports.statistics = function (callback) {
+
+    async.parallel({
+            noShow: noShow,
+            mostUsedDepStation: mostUsedDepStation,
+            mostUsedArrStation: mostUsedArrStation,
+            mostUsedTrain: mostUsedTrain,
+            numUsers:numUsers
+        },
+        function (err, obj) { //This is the final callback
+            if (err) {
+                callback(null, {
+                    "response": err
+                });
+            } else {
+                callback(obj, null);
+            }
+        });
+}
+
+var noShow = function (callback) {
+    var now = new Date();
+    db.all("SELECT * FROM VALIDATION", function (err, validation) {
+        db.all("SELECT * FROM TICKET WHERE DEPARTUREDATE<?", [now], function (err, ticket) {
+            var number = 1-(validation.length / ticket.length);
+
+            callback(null, number);
+        });
+    });
+}
+
+var mostUsedDepStation = function (callback) {
+    var now = new Date();
+    db.all("SELECT DEPARTURE AS departure,Count(*) AS count FROM TICKET GROUP BY DEPARTURE", function (err, rows) {
+        var best = rows[0];
+        for (var i = 0; i < rows.length; i++) {
+            if (best.count < rows[i].count) {
+                best = rows[i];
+            }
+        }
+        db.all("SELECT DEPARTURE,Count(*) AS count FROM TICKET", function (err, rows1) {
+            var prob=best.count/rows1[0].count;
+
+            callback(null, {station:best.departure,prob:prob});
+        });
+    });
+}
+
+var mostUsedArrStation = function (callback) {
+    var now = new Date();
+    db.all("SELECT ARRIVAL AS arrival,Count(*) AS count FROM TICKET GROUP BY ARRIVAL", function (err, rows) {
+        var best = rows[0];
+        for (var i = 0; i < rows.length; i++) {
+            if (best.count < rows[i].count) {
+                best = rows[i];
+            }
+        }
+        db.all("SELECT ARRIVAL,Count(*) AS count FROM TICKET", function (err, rows1) {
+            var prob=best.count/rows1[0].count;
+
+            callback(null, {station:best.arrival,prob:prob});
+        });
+    });
+}
+
+var mostUsedTrain = function (callback) {
+    var now = new Date();
+    db.all("SELECT TRAIN AS train,Count(*) AS count FROM TICKET GROUP BY DEPARTURE", function (err, rows) {
+        var best = rows[0];
+        for (var i = 0; i < rows.length; i++) {
+            if (best.count < rows[i].count) {
+                best = rows[i];
+            }
+        }
+        db.all("SELECT Count(*) AS count FROM TICKET", function (err, rows1) {
+            var prob=best.count/rows1[0].count;
+
+            callback(null, {train:best.train,prob:prob});
+        });
+    });
+}
+
+var numUsers = function (callback) {
+    db.all("SELECT Count(*) AS count FROM USER", function (err, rows) {
+        callback(null, rows[0].count);
     });
 }
