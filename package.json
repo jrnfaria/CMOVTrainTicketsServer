@@ -9,6 +9,7 @@
     "connect": "^3.4.0",
     "express": "^4.13.3",
     "node-rsa": "^0.2.26",
+    "node-uuid": "^1.4.3",
     "request": "^2.64.0",
     "sqlite3": "^3.1.0"
   },

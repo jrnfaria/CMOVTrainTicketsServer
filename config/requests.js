@@ -5,7 +5,8 @@ var opt = require("./../settings.json");
 var file = "traintickets.db";
 var exists = fs.existsSync(file);
 var async = require("async");
-var NodeRSA = require('node-rsa');
+var NodeRSA = require("node-rsa");
+var uuid = require("node-uuid");
 
 var key = new NodeRSA({
     b: 368
@@ -203,7 +204,7 @@ var buyTicketAux = function (id, departure, arrival, departuredate, username, ca
 
             var stmt = db.prepare("INSERT INTO TICKET (TICKETID,DEPARTURE,ARRIVAL,TRAIN,DEPARTUREDATE,USER) VALUES ($id, $departure, $arrival, $train, $departuredate, $username)");
             stmt.bind({
-                $id: id,
+                $id: uuid.v4(),
                 $departure: departure,
                 $arrival: arrival,
                 $train: train[0].trainName,
@@ -347,7 +348,7 @@ exports.validateTickets = function (tickets, callback) {
         console.log(ticket);
 
         module.exports.validateTicket(ticket.ticketId, ticket.deviceId, function (resp, err) {
-            callback1(err,resp);
+            callback1(err, resp);
         });
     }, function (err) {
         if (err) {
@@ -502,40 +503,30 @@ var noShow = function (callback) {
 
 var mostUsedDepStation = function (callback) {
     var now = new Date();
-    db.all("SELECT DEPARTURE AS departure,Count(*) AS count FROM TICKET GROUP BY DEPARTURE", function (err, rows) {
-        var best = rows[0];
-        for (var i = 0; i < rows.length; i++) {
-            if (best.count < rows[i].count) {
-                best = rows[i];
-            }
-        }
+    db.all("SELECT DEPARTURE AS station,Count(*) AS count FROM TICKET GROUP BY DEPARTURE ORDER BY count desc", function (err, rows) {
         db.all("SELECT DEPARTURE,Count(*) AS count FROM TICKET", function (err, rows1) {
-            var prob = best.count / rows1[0].count;
 
-            callback(null, {
-                station: best.departure,
-                prob: prob
-            });
+            for (var i = 0; i < rows.length; i++) {
+                rows[i].prob = rows[i].count / rows1[0].count;
+            }
+
+            callback(null,
+                rows
+            );
         });
     });
 }
 
 var mostUsedArrStation = function (callback) {
     var now = new Date();
-    db.all("SELECT ARRIVAL AS arrival,Count(*) AS count FROM TICKET GROUP BY ARRIVAL", function (err, rows) {
-        var best = rows[0];
-        for (var i = 0; i < rows.length; i++) {
-            if (best.count < rows[i].count) {
-                best = rows[i];
-            }
-        }
+    db.all("SELECT ARRIVAL AS station,Count(*) AS count FROM TICKET GROUP BY ARRIVAL", function (err, rows) {
         db.all("SELECT ARRIVAL,Count(*) AS count FROM TICKET", function (err, rows1) {
-            var prob = best.count / rows1[0].count;
-
-            callback(null, {
-                station: best.arrival,
-                prob: prob
-            });
+            for (var i = 0; i < rows.length; i++) {
+                rows[i].prob = rows[i].count / rows1[0].count;
+            }
+            callback(null,
+                rows
+            );
         });
     });
 }
@@ -543,19 +534,13 @@ var mostUsedArrStation = function (callback) {
 var mostUsedTrain = function (callback) {
     var now = new Date();
     db.all("SELECT TRAIN AS train,Count(*) AS count FROM TICKET GROUP BY DEPARTURE", function (err, rows) {
-        var best = rows[0];
-        for (var i = 0; i < rows.length; i++) {
-            if (best.count < rows[i].count) {
-                best = rows[i];
-            }
-        }
         db.all("SELECT Count(*) AS count FROM TICKET", function (err, rows1) {
-            var prob = best.count / rows1[0].count;
-
-            callback(null, {
-                train: best.train,
-                prob: prob
-            });
+            for (var i = 0; i < rows.length; i++) {
+                rows[i].prob = rows[i].count / rows1[0].count;
+            }
+            callback(null,
+                rows
+            );
         });
     });
 }
