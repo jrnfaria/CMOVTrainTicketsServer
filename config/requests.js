@@ -550,37 +550,49 @@ var numUsers = function (callback) {
 }
 
 
-exports.exitTime = function (station, callback) {
+exports.exitTime = function (station1, station2, callback) {
 
-    db.all("SELECT ID FROM STATION WHERE NAME=?", [station], function (err, stations) {
-        if (stations.length < 1) {
-            callback(null, "Station doesn't exist");
+    db.all("SELECT ID FROM STATION WHERE NAME=?  OR NAME=?", [station1, station2], function (err, stations) {
+        console.log(stations);
+        if (stations.length < 2) {
+            callback(null, "One of the stations doesn't exist");
         } else {
-            station = stations[0].ID;
-            db.all("SELECT TRAINTIMETABLE.STARTTIME AS startTime,TIMETABLESTATION.PASSTIME AS passTime,TIMETABLE.NAME AS timetableName  FROM TIMETABLESTATION,TIMETABLE,TRAINTIMETABLE,STATION WHERE STATION.ID=? AND TIMETABLESTATION.STATIONID=STATION.ID AND TIMETABLESTATION.TIMETABLEID=TRAINTIMETABLE.TIMETABLEID AND TIMETABLE.ID=TRAINTIMETABLE.TIMETABLEID ORDER BY timetableName", [station], function (err, rows) {
-                var rsp = {};
-                var name = rows[0].timetableName;
-                var arr = new Array();
-                var calcHelp=new Date();
-                var split;
+            station1 = stations[0].ID;
+            station2 = stations[1].ID;
 
-                for (var i = 0; i < rows.length; i++) {
-                    if (name != rows[i].timetableName) {
-                        rsp[name] = arr;
+            db.all("SELECT TIMETABLEID as timetableId,PASSTIME as passTime,STATIONID as stationId FROM  TIMETABLESTATION WHERE STATIONID=?  OR STATIONID=? ORDER BY TIMETABLEID,PASSTIME", [station1, station2], function (err, rows) {
+                var timetableId = 0;
+                var time;
 
-                        name = rows[i].timetableName;
-                        arr = new Array();
-                    }
-                    split=rows[i].startTime.split(':');
-                    calcHelp.setHours(split[0]);
-                    calcHelp.setMinutes(split[1]+rows[i].passTime);
-
-                    arr.push(calcHelp.getHours()+':'+calcHelp.getMinutes());
+                if (rows[0].stationId == station1) {
+                    timetableId = rows[0].timetableId;
+                    time=rows[0].passTime;
+                } else {
+                    timetableId = rows[2].timetableId;
+                    time=rows[2].passTime;
                 }
-                rsp[name] = arr;
-                callback(rsp, null);
+                db.all("SELECT STARTTIME AS startTime FROM  TRAINTIMETABLE WHERE TIMETABLEID=? ORDER BY STARTTIME", [timetableId], function (err, rows1) {
+                   var rsp=new Array();
+                   var date = new Date();
+                   var split;
+                   for(var i=0;i<rows1.length;i++)
+                   {
+                    split=rows1[i].startTime.split(':');
+                    date.setHours(split[0]);
+                    date.setMinutes(split[1]+time);
+
+                    rsp.push(date.getHours()+':'+date.getMinutes());
+                   }
+                    callback({response:rsp}, null);
+                });
+
+
             });
         }
-
     });
+}
+
+exports.price = function (callback) {
+    callback(null, rows[0].count);
+
 }

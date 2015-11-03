@@ -108,9 +108,19 @@ module.exports = function (app) {
     });
 
     app.get('/exittime', function (req, res) {
-        var station=req.query.station;
+        var station1=req.query.station1;
+        var station2=req.query.station2;
 
-        requests.exitTime(station,function (found, err) {
+        requests.exitTime(station1,station2,function (found, err) {
+            res.json(createResponse(found, err));
+        });
+    });
+
+    app.get('/price', function (req, res) {
+        var station1=req.query.station1;
+        var station2=req.query.station2;
+
+        requests.price(station1,function (found, err) {
             res.json(createResponse(found, err));
         });
     });
