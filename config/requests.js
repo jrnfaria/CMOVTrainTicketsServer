@@ -7,6 +7,7 @@ var exists = fs.existsSync(file);
 var async = require("async");
 var NodeRSA = require("node-rsa");
 var uuid = require("node-uuid");
+var sqlite3 = require("sqlite3").verbose();
 
 var key = new NodeRSA({
     b: 368
@@ -15,7 +16,16 @@ key.setOptions({
     'signingScheme': 'sha1'
 });
 
-var sqlite3 = require("sqlite3").verbose();
+key.generateKeyPair();
+
+key.importKey(opt.publicKey, 'pkcs8-public-pem');
+key.importKey(opt.privateKey, 'pkcs1-private-pem');
+
+//key.importKey(opt.publicKey, 'pkcs8');
+
+//console.log(key);
+
+
 var db = new sqlite3.Database(file);
 
 if (!exists) {
@@ -154,7 +164,7 @@ var timetableAux = function (timetableId, callback) {
     });
 }
 
-exports.buyTicket = function ( departure, arrival, departuredate, username, callback) {
+exports.buyTicket = function (departure, arrival, departuredate, username, callback) {
     var split = departuredate.split('/');
     if (split.length == 3) {
         departuredate = split[1] + '/' + split[0] + '/' + split[2];
@@ -418,6 +428,10 @@ exports.users = function (callback) {
 
 exports.mytickets = function (username, callback) {
     db.all("SELECT * FROM TICKET WHERE USER=?", [username], function (err, rows) {
+
+        for (var i = 0; i < rows.length; i++) {
+            rows[i].encrypt = key.sign(rows[i].TICKETID + '|' + rows[i].DEPARTUREDATE, 'base64');
+        }
         callback({
             response: rows
         }, null);
@@ -426,6 +440,7 @@ exports.mytickets = function (username, callback) {
 
 exports.ticket = function (ticketid, callback) {
     db.all("SELECT * FROM TICKET WHERE TICKETID=?", [ticketid], function (err, rows) {
+        rows[0].encrypt = key.sign(rows[i].TICKETID + '|' + rows[i].DEPARTUREDATE, 'base64');
         callback({
             response: rows
         }, null);
