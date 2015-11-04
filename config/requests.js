@@ -560,30 +560,31 @@ exports.exitTime = function (station1, station2, callback) {
             station1 = stations[0].ID;
             station2 = stations[1].ID;
 
-            db.all("SELECT TIMETABLEID as timetableId,PASSTIME as passTime,STATIONID as stationId FROM  TIMETABLESTATION WHERE STATIONID=?  OR STATIONID=? ORDER BY TIMETABLEID,PASSTIME", [station1, station2], function (err, rows) {
+            db.all("SELECT TIMETABLEID as timetableId,PASSTIME as passTime,STATIONID as stationId FROM  TIMETABLESTATION WHERE STATIONID=? AND TIMETABLEID IN(SELECT TIMETABLEID FROM TIMETABLESTATION WHERE STATIONID=?) ORDER BY TIMETABLEID,PASSTIME", [station1, station2], function (err, rows) {
                 var timetableId = 0;
                 var time;
-
+                console.log(rows);
                 if (rows[0].stationId == station1) {
                     timetableId = rows[0].timetableId;
-                    time=rows[0].passTime;
+                    time = rows[0].passTime;
                 } else {
                     timetableId = rows[2].timetableId;
-                    time=rows[2].passTime;
+                    time = rows[2].passTime;
                 }
                 db.all("SELECT STARTTIME AS startTime FROM  TRAINTIMETABLE WHERE TIMETABLEID=? ORDER BY STARTTIME", [timetableId], function (err, rows1) {
-                   var rsp=new Array();
-                   var date = new Date();
-                   var split;
-                   for(var i=0;i<rows1.length;i++)
-                   {
-                    split=rows1[i].startTime.split(':');
-                    date.setHours(split[0]);
-                    date.setMinutes(split[1]+time);
+                    var rsp = new Array();
+                    var date = new Date();
+                    var split;
+                    for (var i = 0; i < rows1.length; i++) {
+                        split = rows1[i].startTime.split(':');
+                        date.setHours(split[0]);
+                        date.setMinutes(split[1] + time);
 
-                    rsp.push(date.getHours()+':'+date.getMinutes());
-                   }
-                    callback({response:rsp}, null);
+                        rsp.push(date.getHours() + ':' + date.getMinutes());
+                    }
+                    callback({
+                        response: rsp
+                    }, null);
                 });
 
 
@@ -592,7 +593,44 @@ exports.exitTime = function (station1, station2, callback) {
     });
 }
 
-exports.price = function (callback) {
-    callback(null, rows[0].count);
+exports.price = function (station1, station2, callback) {
 
+    db.all("SELECT ID FROM STATION WHERE NAME=?  OR NAME=?", [station1, station2], function (err, stations) {
+        console.log(stations);
+        if (stations.length < 2) {
+            callback(null, "One of the stations doesn't exist");
+        } else {
+            station1 = stations[0].ID;
+            station2 = stations[1].ID;
+
+            db.all("SELECT TIMETABLEID as timetableId,PASSTIME as passTime,STATIONID as stationId FROM  TIMETABLESTATION WHERE STATIONID=? AND TIMETABLEID IN(SELECT TIMETABLEID FROM TIMETABLESTATION WHERE STATIONID=?) ORDER BY TIMETABLEID,PASSTIME", [station1, station2], function (err, rows) {
+                console.log(rows);
+                var timetableId = 0;
+
+                if (rows[0].stationId == station1) {
+                    timetableId = rows[0].timetableId;
+                } else {
+                    timetableId = rows[2].timetableId;
+                }
+
+                db.all("SELECT TIMETABLEID as timetableId,PASSTIME as passTime,STATIONID as stationId FROM  TIMETABLESTATION WHERE TIMETABLEID=? ORDER BY PASSTIME", [timetableId], function (err, rows1) {
+
+                    var pos1, pos2;
+
+                    console.log(rows1);
+                    for (var i = 0; i < rows1.length; i++) {
+                        if (rows1[i].stationId == station1) {
+                            pos1 = i;
+                        } else if (rows1[i].stationId == station2) {
+                            pos2 = i;
+                        }
+                    }
+                    var rsp = Math.abs(2.5 * (pos2 - pos1));
+                    callback({
+                        response: rsp
+                    }, null);
+                });
+            });
+        }
+    });
 }

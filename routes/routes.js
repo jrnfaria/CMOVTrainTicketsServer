@@ -120,7 +120,7 @@ module.exports = function (app) {
         var station1=req.query.station1;
         var station2=req.query.station2;
 
-        requests.price(station1,function (found, err) {
+        requests.price(station1,station2,function (found, err) {
             res.json(createResponse(found, err));
         });
     });
