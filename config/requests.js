@@ -35,6 +35,12 @@ var userAlreadyExists = function (username) {
     });
 }
 
+var randomMoneyFail = function () {
+    var fail = Math.floor(Math.random() * (11 - 1) + 1);
+
+    return fail == 1
+}
+
 exports.signup = function (name, username, password, creditcardtype, creditcardnumber, creditcardvalidity, callback) {
 
     if (userAlreadyExists(username)) {
@@ -109,6 +115,7 @@ exports.timetable = function (callback) {
 }
 
 var timetableAux = function (timetableId, callback) {
+
 
     db.all("SELECT TIMETABLE.NAME AS route,STATION.NAME AS stationName,TIMETABLESTATION.PASSTIME AS passTime FROM TIMETABLE,STATION,TIMETABLESTATION WHERE TIMETABLE.ID=? AND TIMETABLESTATION.TIMETABLEID=TIMETABLE.ID AND TIMETABLESTATION.STATIONID=STATION.ID ORDER BY passTime", [timetableId], function (err, route) {
         db.all("SELECT TRAIN.NAME AS trainName,TRAINTIMETABLE.STARTTIME AS startTime FROM TRAIN,TIMETABLE,TRAINTIMETABLE WHERE TIMETABLE.ID=? AND TRAINTIMETABLE.TIMETABLEID=TIMETABLE.ID AND TRAINTIMETABLE.TRAINID=TRAIN.ID ORDER BY datetime(startTime) ASC", [timetableId], function (err, trains) {
@@ -187,35 +194,42 @@ var dateExists = function (date, station, callback) {
 
 var buyTicketAux = function (id, departure, arrival, departuredate, username, callback) {
 
-    var date = new Date(departure);
+    if (randomMoneyFail()) {
+        callback({response:"OK"
+                    
+                },null);
 
-    db.all("SELECT TIMETABLEID AS timetable,STATIONID,TIMETABLESTATION.PASSTIME AS passTime,STATION.NAME AS stationName FROM STATION,TIMETABLE,TIMETABLESTATION WHERE STATION.NAME=? AND STATION.ID=TIMETABLESTATION.STATIONID AND TIMETABLE.ID=TIMETABLESTATION.TIMETABLEID", [departure], function (err, rows) {
-        var selected;
-        selected = rows[0];
-        for (var i = 0; i < rows.length; i++) {
-            if (rows[i].passTime < selected) {
-                selected = rows[i];
+    } else {
+        var date = new Date(departure);
+
+        db.all("SELECT TIMETABLEID AS timetable,STATIONID,TIMETABLESTATION.PASSTIME AS passTime,STATION.NAME AS stationName FROM STATION,TIMETABLE,TIMETABLESTATION WHERE STATION.NAME=? AND STATION.ID=TIMETABLESTATION.STATIONID AND TIMETABLE.ID=TIMETABLESTATION.TIMETABLEID", [departure], function (err, rows) {
+            var selected;
+            selected = rows[0];
+            for (var i = 0; i < rows.length; i++) {
+                if (rows[i].passTime < selected) {
+                    selected = rows[i];
+                }
             }
-        }
-        db.all("SELECT TRAIN.NAME AS trainName FROM TRAIN,TRAINTIMETABLE WHERE TRAINTIMETABLE.TIMETABLEID=? AND TRAIN.ID=TRAINTIMETABLE.TRAINID", [selected.timetable], function (err, train) {
+            db.all("SELECT TRAIN.NAME AS trainName FROM TRAIN,TRAINTIMETABLE WHERE TRAINTIMETABLE.TIMETABLEID=? AND TRAIN.ID=TRAINTIMETABLE.TRAINID", [selected.timetable], function (err, train) {
 
-            var stmt = db.prepare("INSERT INTO TICKET (TICKETID,DEPARTURE,ARRIVAL,TRAIN,DEPARTUREDATE,USER) VALUES ($id, $departure, $arrival, $train, $departuredate, $username)");
-            stmt.bind({
-                $id: uuid.v4(),
-                $departure: departure,
-                $arrival: arrival,
-                $train: train[0].trainName,
-                $departuredate: departuredate,
-                $username: username
-            });
-            stmt.run();
-            stmt.finalize();
+                var stmt = db.prepare("INSERT INTO TICKET (TICKETID,DEPARTURE,ARRIVAL,TRAIN,DEPARTUREDATE,USER) VALUES ($id, $departure, $arrival, $train, $departuredate, $username)");
+                stmt.bind({
+                    $id: uuid.v4(),
+                    $departure: departure,
+                    $arrival: arrival,
+                    $train: train[0].trainName,
+                    $departuredate: departuredate,
+                    $username: username
+                });
+                stmt.run();
+                stmt.finalize();
 
-            callback(null, {
-                'response': "OK"
+                callback(null, {
+                    response: "OK"
+                });
             });
         });
-    });
+    }
 }
 
 //discovers timetable and stations and checks if capacity is good enough
