@@ -165,7 +165,9 @@ exports.buyTicket = function (id, departure, arrival, departuredate, username, c
                     response: err
                 });
             } else {
-                callback({response:obj[3]}, null);
+                callback({
+                    response: obj[3]
+                }, null);
             }
         });
 }
@@ -346,7 +348,9 @@ exports.validateTickets = function (tickets, callback) {
         if (err) {
             callback(err, null);
         } else {
-            callback({response:'ok'}, null);
+            callback({
+                response: 'ok'
+            }, null);
         }
     });
 }
@@ -391,19 +395,24 @@ exports.validateTicket = function (ticketid, deviceid, callback) {
 
 exports.users = function (callback) {
     db.all("SELECT * FROM USER", function (err, rows) {
-        callback({response:rows}, null);
+        callback(
+            rows, null);
     });
 }
 
 exports.mytickets = function (username, callback) {
     db.all("SELECT * FROM TICKET WHERE USER=?", [username], function (err, rows) {
-        callback({response:rows}, null);
+        callback({
+            response: rows
+        }, null);
     });
 }
 
 exports.ticket = function (ticketid, callback) {
     db.all("SELECT * FROM TICKET WHERE TICKETID=?", [ticketid], function (err, rows) {
-        callback({response:rows}, null);
+        callback({
+            response: rows
+        }, null);
     });
 }
 
@@ -444,9 +453,13 @@ exports.tickets = function (timetableId, departureDate, callback) {
             }, function (err) {
                 if (err) {
                     console.log('err');
-                    callback(null, {response:err});
+                    callback(null, {
+                        response: err
+                    });
                 } else {
-                    callback({response:res}, null);
+                    callback({
+                        response: res
+                    }, null);
                 }
             });
         });
@@ -455,7 +468,9 @@ exports.tickets = function (timetableId, departureDate, callback) {
 
 exports.validation = function (ticketid, callback) {
     db.all("SELECT * FROM VALIDATION WHERE TICKETID=?", [ticketid], function (err, rows) {
-        callback({response:rows}, null);
+        callback({
+            response: rows
+        }, null);
     });
 }
 
@@ -548,7 +563,9 @@ exports.exitTime = function (station1, station2, callback) {
     db.all("SELECT ID FROM STATION WHERE NAME=?  OR NAME=?", [station1, station2], function (err, stations) {
         console.log(stations);
         if (stations.length < 2) {
-            callback(null, {response:"One of the stations doesn't exist"});
+            callback(null, {
+                response: "One of the stations doesn't exist"
+            });
         } else {
             station1 = stations[0].ID;
             station2 = stations[1].ID;
@@ -589,15 +606,15 @@ exports.exitTime = function (station1, station2, callback) {
 exports.price = function (station1, station2, callback) {
 
     db.all("SELECT ID FROM STATION WHERE NAME=?  OR NAME=?", [station1, station2], function (err, stations) {
-        console.log(stations);
         if (stations.length < 2) {
-            callback(null, {response:"One of the stations doesn't exist"});
+            callback(null, {
+                response: "One of the stations doesn't exist"
+            });
         } else {
             station1 = stations[0].ID;
             station2 = stations[1].ID;
 
             db.all("SELECT TIMETABLEID as timetableId,PASSTIME as passTime,STATIONID as stationId FROM  TIMETABLESTATION WHERE STATIONID=? AND TIMETABLEID IN(SELECT TIMETABLEID FROM TIMETABLESTATION WHERE STATIONID=?) ORDER BY TIMETABLEID,PASSTIME", [station1, station2], function (err, rows) {
-                console.log(rows);
                 var timetableId = 0;
 
                 if (rows[0].stationId == station1) {
@@ -610,7 +627,6 @@ exports.price = function (station1, station2, callback) {
 
                     var pos1, pos2;
 
-                    console.log(rows1);
                     for (var i = 0; i < rows1.length; i++) {
                         if (rows1[i].stationId == station1) {
                             pos1 = i;
