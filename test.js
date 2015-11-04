@@ -19,13 +19,13 @@ var text='key';
 
 
 key.sign(text,'base64');
-
+ 
 key.verify(text,'base64');
 
 
 console.log('key: ', key);
 console.log('--------------------------------------------------------------------------');
-console.log('key: ', key1);
+console.log('key1: ', key1);
 console.log('--------------------------------------------------------------------------');
 console.log(key.exportKey());
 

@@ -11,8 +11,9 @@ var uuid = require("node-uuid");
 var key = new NodeRSA({
     b: 368
 });
-
-key.importKey(key.exportKey());
+key.setOptions({
+    'signingScheme': 'sha1'
+});
 
 var sqlite3 = require("sqlite3").verbose();
 var db = new sqlite3.Database(file);
@@ -153,7 +154,7 @@ var timetableAux = function (timetableId, callback) {
     });
 }
 
-exports.buyTicket = function (id, departure, arrival, departuredate, username, callback) {
+exports.buyTicket = function ( departure, arrival, departuredate, username, callback) {
     var split = departuredate.split('/');
     if (split.length == 3) {
         departuredate = split[1] + '/' + split[0] + '/' + split[2];
@@ -164,7 +165,7 @@ exports.buyTicket = function (id, departure, arrival, departuredate, username, c
             dateExists.bind('date', departuredate).bind('station', departure),
             stationsExists.bind('departure', departure).bind('arrival', arrival).bind('date', date),
             checkCapacity.bind('departure', departure).bind('arrival', arrival).bind('departuredate', date),
-            buyTicketAux.bind('id', id).bind('departure', departure).bind('arrival', arrival).bind('departuredate', date).bind('username', username),
+            buyTicketAux.bind('departure', departure).bind('arrival', arrival).bind('departuredate', date).bind('username', username),
         ],
         function (err, obj) { //This is the final callback
             if (err) {
@@ -192,12 +193,13 @@ var dateExists = function (date, station, callback) {
     }
 }
 
-var buyTicketAux = function (id, departure, arrival, departuredate, username, callback) {
+var buyTicketAux = function (departure, arrival, departuredate, username, callback) {
 
     if (randomMoneyFail()) {
-        callback({response:"OK"
-                    
-                },null);
+        callback({
+            response: "Transaction fail due to insufficient funds"
+
+        }, null);
 
     } else {
         var date = new Date(departure);

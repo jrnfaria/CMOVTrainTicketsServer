@@ -55,7 +55,7 @@ module.exports = function (app) {
         var departuredate = req.body.departuredate;
         var username = req.body.username;
 
-        requests.buyTicket(id, departure, arrival, departuredate, username, function (found,err) {
+        requests.buyTicket(departure, arrival, departuredate, username, function (found,err) {
             res.json(createResponse(found, err));
         });
     });
