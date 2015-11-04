@@ -128,8 +128,7 @@ var timetableAux = function (timetableId, callback) {
                 for (var j = 0; j < route.length; j++) {
 
                     var passTime = new Date(startTime);
-                    passTime.setMinutes(passTime.getMinutes() + route[j].passTime % 60);
-                    passTime.setHours(parseInt(passTime.getHours()) + route[j].passTime / 60);
+                    passTime.setMinutes(passTime.getMinutes() + route[j].passTime);
 
                     var station = {
                         'name': route[j].stationName,
@@ -163,10 +162,10 @@ exports.buyTicket = function (id, departure, arrival, departuredate, username, c
         function (err, obj) { //This is the final callback
             if (err) {
                 callback(null, {
-                    "response": err
+                    response: err
                 });
             } else {
-                callback(obj[3], null);
+                callback({response:obj[3]}, null);
             }
         });
 }
@@ -215,9 +214,6 @@ var buyTicketAux = function (id, departure, arrival, departuredate, username, ca
             });
         });
     });
-
-
-
 }
 
 //discovers timetable and stations and checks if capacity is good enough
@@ -350,7 +346,7 @@ exports.validateTickets = function (tickets, callback) {
         if (err) {
             callback(err, null);
         } else {
-            callback('ok', null);
+            callback({response:'ok'}, null);
         }
     });
 }
@@ -369,17 +365,17 @@ exports.validateTicket = function (ticketid, deviceid, callback) {
                     stmt.finalize();
 
                     callback({
-                        'response': "OK"
+                        response: "OK"
                     }, null);
                 } else {
                     if (validations.length == 1) {
                         if (validations[0].DEVICEID == deviceid) {
                             callback({
-                                'response': "OK"
+                                response: "OK"
                             }, null);
                         } else {
                             callback({
-                                'response': "Ticket already validated with another device"
+                                response: "Ticket already validated with another device"
                             }, null);
                         }
                     }
@@ -387,7 +383,7 @@ exports.validateTicket = function (ticketid, deviceid, callback) {
             });
         } else {
             callback({
-                'response': "Ticket not found"
+                response: "Ticket not found"
             }, null);
         }
     });
@@ -395,33 +391,30 @@ exports.validateTicket = function (ticketid, deviceid, callback) {
 
 exports.users = function (callback) {
     db.all("SELECT * FROM USER", function (err, rows) {
-        callback(rows, null);
+        callback({response:rows}, null);
     });
 }
 
 exports.mytickets = function (username, callback) {
     db.all("SELECT * FROM TICKET WHERE USER=?", [username], function (err, rows) {
-        callback(rows, null);
+        callback({response:rows}, null);
     });
 }
 
 exports.ticket = function (ticketid, callback) {
     db.all("SELECT * FROM TICKET WHERE TICKETID=?", [ticketid], function (err, rows) {
-        callback(rows, null);
+        callback({response:rows}, null);
     });
 }
 
 exports.tickets = function (timetableId, departureDate, callback) {
 
-    console.log(timetableId);
-    console.log(departureDate);
     var date = new Date(departureDate);
 
     if (isNaN(date)) {
         callback(null, 'Invalid date');
     } else {
         var combs = new Array();
-
 
         db.all("SELECT * FROM STATION,TIMETABLESTATION WHERE TIMETABLESTATION.TIMETABLEID=? AND TIMETABLESTATION.STATIONID=STATION.ID ORDER BY TIMETABLESTATION.PASSTIME", [timetableId], function (err, stations) {
             for (i = 0; i < stations.length; i++) {
@@ -451,9 +444,9 @@ exports.tickets = function (timetableId, departureDate, callback) {
             }, function (err) {
                 if (err) {
                     console.log('err');
-                    callback(null, err);
+                    callback(null, {response:err});
                 } else {
-                    callback(res, null);
+                    callback({response:res}, null);
                 }
             });
         });
@@ -462,7 +455,7 @@ exports.tickets = function (timetableId, departureDate, callback) {
 
 exports.validation = function (ticketid, callback) {
     db.all("SELECT * FROM VALIDATION WHERE TICKETID=?", [ticketid], function (err, rows) {
-        callback(rows, null);
+        callback({response:rows}, null);
     });
 }
 
@@ -478,11 +471,11 @@ exports.statistics = function (callback) {
         function (err, obj) { //This is the final callback
             if (err) {
                 callback(null, {
-                    "response": err
+                    response: err
                 });
             } else {
                 callback({
-                    "response": obj
+                    response: obj
                 }, null);
             }
         });
@@ -555,7 +548,7 @@ exports.exitTime = function (station1, station2, callback) {
     db.all("SELECT ID FROM STATION WHERE NAME=?  OR NAME=?", [station1, station2], function (err, stations) {
         console.log(stations);
         if (stations.length < 2) {
-            callback(null, "One of the stations doesn't exist");
+            callback(null, {response:"One of the stations doesn't exist"});
         } else {
             station1 = stations[0].ID;
             station2 = stations[1].ID;
@@ -598,7 +591,7 @@ exports.price = function (station1, station2, callback) {
     db.all("SELECT ID FROM STATION WHERE NAME=?  OR NAME=?", [station1, station2], function (err, stations) {
         console.log(stations);
         if (stations.length < 2) {
-            callback(null, "One of the stations doesn't exist");
+            callback(null, {response:"One of the stations doesn't exist"});
         } else {
             station1 = stations[0].ID;
             station2 = stations[1].ID;
