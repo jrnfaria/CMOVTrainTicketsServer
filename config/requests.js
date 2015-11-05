@@ -428,9 +428,12 @@ exports.users = function (callback) {
 
 exports.mytickets = function (username, callback) {
     db.all("SELECT * FROM TICKET WHERE USER=?", [username], function (err, rows) {
+        var time;
 
         for (var i = 0; i < rows.length; i++) {
             rows[i].encrypt = key.sign(rows[i].TICKETID + '|' + rows[i].DEPARTUREDATE, 'base64');
+            time = new Date(parseFloat(rows[i].DEPARTUREDATE.replace(",","."))+3600);
+            rows[i].DEPARTUREDATE = time.getUTCDate()+'/'+(time.getUTCMonth()+1)+'/'+time.getUTCFullYear()+' '+time.getHours()+':'+time.getMinutes();
         }
         callback({
             response: rows
@@ -448,6 +451,12 @@ exports.ticket = function (ticketid, callback) {
 }
 
 exports.tickets = function (timetableId, departureDate, callback) {
+
+    var split = departureDate.split('/');
+    if (split.length == 3) {
+        departureDate = split[1] + '/' + split[0] + '/' + split[2];
+    }
+
 
     var date = new Date(departureDate);
 
