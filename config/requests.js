@@ -419,7 +419,7 @@ exports.users = function (callback) {
 }
 
 exports.mytickets = function (username, callback) {
-    db.all("SELECT * FROM TICKET WHERE USER=?", [username], function (err, rows) {
+    db.all("SELECT * FROM TICKET WHERE USER=? ORDER BY DEPARTUREDATE", [username], function (err, rows) {
         var time;
 
         if (rows.length == 0) {
@@ -612,26 +612,33 @@ var numUsers = function (callback) {
 
 
 exports.exitTime = function (station1, station2, callback) {
-    db.all("SELECT ID FROM STATION WHERE NAME=?  OR NAME=?", [station1, station2], function (err, stations) {
+    db.all("SELECT ID,NAME FROM STATION WHERE NAME=?  OR NAME=?", [station1, station2], function (err, stations) {
         if (stations.length < 2) {
             callback(null, {
                 response: "One of the stations doesn't exist"
             });
         } else {
-            station1 = stations[0].ID;
-            station2 = stations[1].ID;
+            if (stations[0].NAME == station1) {
+                station1 = stations[0].ID;
+                station2 = stations[1].ID;
+            } else {
+                station1 = stations[1].ID;
+                station2 = stations[0].ID;
+            }
 
             db.all("SELECT TIMETABLEID as timetableId,PASSTIME as passTime,STATIONID as stationId FROM  TIMETABLESTATION WHERE STATIONID=? AND TIMETABLEID IN(SELECT TIMETABLEID FROM TIMETABLESTATION WHERE STATIONID=?) ORDER BY TIMETABLEID,PASSTIME", [station1, station2], function (err, rows) {
                 var timetableId = 0;
                 var time;
-                if (rows[0].stationId == station1) {
+                if (rows[0].passTime <rows[1].passTime) {
                     timetableId = rows[0].timetableId;
                     time = rows[0].passTime;
                 } else {
-                    timetableId = rows[2].timetableId;
-                    time = rows[2].passTime;
+                    timetableId = rows[1].timetableId;
+                    time = rows[1].passTime;
                 }
                 db.all("SELECT STARTTIME AS startTime FROM  TRAINTIMETABLE WHERE TIMETABLEID=? ORDER BY STARTTIME", [timetableId], function (err, rows1) {
+                    console.log(rows1);
+                    console.log(time);
                     var rsp = new Array();
                     var date = new Date();
                     var split;
@@ -664,8 +671,13 @@ exports.price = function (station1, station2, callback) {
                 response: "One of the stations doesn't exist"
             });
         } else {
-            station1 = stations[0].ID;
-            station2 = stations[1].ID;
+             if (stations[0].NAME == station1) {
+                station1 = stations[0].ID;
+                station2 = stations[1].ID;
+            } else {
+                station1 = stations[1].ID;
+                station2 = stations[0].ID;
+            }
 
             db.all("SELECT TIMETABLEID as timetableId,PASSTIME as passTime,STATIONID as stationId FROM  TIMETABLESTATION WHERE STATIONID=? AND TIMETABLEID IN(SELECT TIMETABLEID FROM TIMETABLESTATION WHERE STATIONID=?) ORDER BY TIMETABLEID,PASSTIME", [station1, station2], function (err, rows) {
                 var timetableId = 0;
