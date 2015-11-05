@@ -429,7 +429,7 @@ exports.mytickets = function (username, callback) {
 
         } else {
             for (var i = 0; i < rows.length; i++) {
-                rows[i].encrypt = key.sign(rows[i].TICKETID + '|' + rows[i].DEPARTUREDATE, 'base64');
+                rows[i].encrypt = key.sign(rows[i].TICKETID + '|' + rows[i].DEPARTUREDATE, 'base64', 'utf8');
                 time = new Date(parseFloat(rows[i].DEPARTUREDATE.replace(",", ".")) + 3600);
                 rows[i].DEPARTUREDATE = time.getUTCDate() + '/' + (time.getUTCMonth() + 1) + '/' + time.getUTCFullYear() + ' ' + time.getHours() + ':' + time.getMinutes();
                 if (time.getMinutes() == 0)
@@ -445,7 +445,7 @@ exports.mytickets = function (username, callback) {
 
 exports.ticket = function (ticketid, callback) {
     db.all("SELECT * FROM TICKET WHERE TICKETID=?", [ticketid], function (err, rows) {
-        rows[0].encrypt = key.sign(rows[0].TICKETID + '|' + rows[0].DEPARTUREDATE, 'base64');
+        rows[0].encrypt = key.sign(rows[0].TICKETID + '|' + rows[0].DEPARTUREDATE, 'base64', 'utf8');
         var time = new Date(parseFloat(rows[0].DEPARTUREDATE.replace(",", ".")) + 3600);
         rows[0].DEPARTUREDATE = time.getUTCDate() + '/' + (time.getUTCMonth() + 1) + '/' + time.getUTCFullYear() + ' ' + time.getHours() + ':' + time.getMinutes();
         if (time.getMinutes() == 0)
