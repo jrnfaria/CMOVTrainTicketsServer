@@ -62,7 +62,6 @@ module.exports = function (app) {
 
     app.post('/mytickets', function (req, res) {
         var username = req.body.username;
-        console.log(username);
         requests.mytickets(username, function (found, err) {
             res.json(createResponse(found, err));
         });
