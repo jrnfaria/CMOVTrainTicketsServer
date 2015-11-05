@@ -21,11 +21,6 @@ key.generateKeyPair();
 key.importKey(opt.publicKey, 'pkcs8-public-pem');
 key.importKey(opt.privateKey, 'pkcs1-private-pem');
 
-//key.importKey(opt.publicKey, 'pkcs8');
-
-//console.log(key);
-
-
 var db = new sqlite3.Database(file);
 
 if (!exists) {
@@ -103,7 +98,7 @@ exports.signin = function (username, password, callback) {
     });
 }
 
-//get timetable
+// Get timetable
 exports.timetable = function (callback) {
     async.parallel([
             timetableAux.bind('timetableId', 1),
@@ -126,7 +121,6 @@ exports.timetable = function (callback) {
 }
 
 var timetableAux = function (timetableId, callback) {
-
 
     db.all("SELECT TIMETABLE.NAME AS route,STATION.NAME AS stationName,TIMETABLESTATION.PASSTIME AS passTime FROM TIMETABLE,STATION,TIMETABLESTATION WHERE TIMETABLE.ID=? AND TIMETABLESTATION.TIMETABLEID=TIMETABLE.ID AND TIMETABLESTATION.STATIONID=STATION.ID ORDER BY passTime", [timetableId], function (err, route) {
         db.all("SELECT TRAIN.NAME AS trainName,TRAINTIMETABLE.STARTTIME AS startTime FROM TRAIN,TIMETABLE,TRAINTIMETABLE WHERE TIMETABLE.ID=? AND TRAINTIMETABLE.TIMETABLEID=TIMETABLE.ID AND TRAINTIMETABLE.TRAINID=TRAIN.ID ORDER BY datetime(startTime) ASC", [timetableId], function (err, trains) {
@@ -177,7 +171,7 @@ exports.buyTicket = function (departure, arrival, departuredate, username, callb
             checkCapacity.bind('departure', departure).bind('arrival', arrival).bind('departuredate', date),
             buyTicketAux.bind('departure', departure).bind('arrival', arrival).bind('departuredate', date).bind('username', username),
         ],
-        function (err, obj) { //This is the final callback
+        function (err, obj) { // This is the final callback
             if (err) {
                 callback(null, {
                     response: err
@@ -244,9 +238,9 @@ var buyTicketAux = function (departure, arrival, departuredate, username, callba
     }
 }
 
-//discovers timetable and stations and checks if capacity is good enough
+// Discovers timetable and stations and checks if capacity is ok
 var checkCapacity = function (departure, arrival, departuredate, callback) {
-    //first discovers timetable
+    // First discovers timetable
     db.all("SELECT TIMETABLEID AS timetable,STATIONID,TIMETABLESTATION.PASSTIME AS passTime,STATION.NAME AS stationName FROM STATION,TIMETABLE,TIMETABLESTATION WHERE (STATION.NAME=? OR STATION.NAME=?) AND STATION.ID=TIMETABLESTATION.STATIONID AND TIMETABLE.ID=TIMETABLESTATION.TIMETABLEID", [departure, arrival], function (err, rows) {
         var timetableId = 0;
         var passTime = 500;
@@ -365,8 +359,6 @@ var stationsExists = function (departure, arrival, date, callback) {
 
 exports.validateTickets = function (tickets, callback) {
     async.forEach(tickets, function (ticket, callback1) {
-        console.log(ticket);
-
         module.exports.validateTicket(ticket.ticketId, ticket.deviceId, function (resp, err) {
             callback1(err, resp);
         });
@@ -492,7 +484,6 @@ exports.tickets = function (timetableId, departureDate, callback) {
 
             }, function (err) {
                 if (err) {
-                    console.log('err');
                     callback(null, {
                         response: err
                     });
@@ -523,7 +514,7 @@ exports.statistics = function (callback) {
             mostUsedTrain: mostUsedTrain,
             numUsers: numUsers
         },
-        function (err, obj) { //This is the final callback
+        function (err, obj) { // This is the final callback
             if (err) {
                 callback(null, {
                     response: err
@@ -599,9 +590,7 @@ var numUsers = function (callback) {
 
 
 exports.exitTime = function (station1, station2, callback) {
-
     db.all("SELECT ID FROM STATION WHERE NAME=?  OR NAME=?", [station1, station2], function (err, stations) {
-        console.log(stations);
         if (stations.length < 2) {
             callback(null, {
                 response: "One of the stations doesn't exist"
@@ -613,7 +602,6 @@ exports.exitTime = function (station1, station2, callback) {
             db.all("SELECT TIMETABLEID as timetableId,PASSTIME as passTime,STATIONID as stationId FROM  TIMETABLESTATION WHERE STATIONID=? AND TIMETABLEID IN(SELECT TIMETABLEID FROM TIMETABLESTATION WHERE STATIONID=?) ORDER BY TIMETABLEID,PASSTIME", [station1, station2], function (err, rows) {
                 var timetableId = 0;
                 var time;
-                console.log(rows);
                 if (rows[0].stationId == station1) {
                     timetableId = rows[0].timetableId;
                     time = rows[0].passTime;
