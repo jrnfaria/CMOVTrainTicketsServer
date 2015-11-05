@@ -422,20 +422,34 @@ exports.mytickets = function (username, callback) {
     db.all("SELECT * FROM TICKET WHERE USER=?", [username], function (err, rows) {
         var time;
 
-        for (var i = 0; i < rows.length; i++) {
-            rows[i].encrypt = key.sign(rows[i].TICKETID + '|' + rows[i].DEPARTUREDATE, 'base64');
-            time = new Date(parseFloat(rows[i].DEPARTUREDATE.replace(",","."))+3600);
-            rows[i].DEPARTUREDATE = time.getUTCDate()+'/'+(time.getUTCMonth()+1)+'/'+time.getUTCFullYear()+' '+time.getHours()+':'+time.getMinutes();
+        if (rows.length == 0) {
+            callback({
+                response: []
+            }, null);
+
+        } else {
+            for (var i = 0; i < rows.length; i++) {
+                rows[i].encrypt = key.sign(rows[i].TICKETID + '|' + rows[i].DEPARTUREDATE, 'base64');
+                time = new Date(parseFloat(rows[i].DEPARTUREDATE.replace(",", ".")) + 3600);
+                rows[i].DEPARTUREDATE = time.getUTCDate() + '/' + (time.getUTCMonth() + 1) + '/' + time.getUTCFullYear() + ' ' + time.getHours() + ':' + time.getMinutes();
+                if (time.getMinutes() == 0)
+                    rows[i].DEPARTUREDATE += '0';
+            }
+            callback({
+                response: rows
+            }, null);
         }
-        callback({
-            response: rows
-        }, null);
     });
+
 }
 
 exports.ticket = function (ticketid, callback) {
     db.all("SELECT * FROM TICKET WHERE TICKETID=?", [ticketid], function (err, rows) {
-        rows[0].encrypt = key.sign(rows[i].TICKETID + '|' + rows[i].DEPARTUREDATE, 'base64');
+        rows[0].encrypt = key.sign(rows[0].TICKETID + '|' + rows[0].DEPARTUREDATE, 'base64');
+        var time = new Date(parseFloat(rows[0].DEPARTUREDATE.replace(",", ".")) + 3600);
+        rows[0].DEPARTUREDATE = time.getUTCDate() + '/' + (time.getUTCMonth() + 1) + '/' + time.getUTCFullYear() + ' ' + time.getHours() + ':' + time.getMinutes();
+        if (time.getMinutes() == 0)
+            rows[0].DEPARTUREDATE += '0';
         callback({
             response: rows
         }, null);
@@ -464,6 +478,7 @@ exports.tickets = function (timetableId, departureDate, callback) {
                         var depDate = new Date(date);
                         depDate.setMinutes(date.getMinutes() + stations[i].PASSTIME);
 
+
                         combs.push({
                             'departure': stations[i].NAME,
                             'arrival': stations[j].NAME,
@@ -477,8 +492,15 @@ exports.tickets = function (timetableId, departureDate, callback) {
             async.forEach(combs, function (comb, callback1) {
 
                 db.all("SELECT * FROM TICKET WHERE TICKETID NOT IN (SELECT TICKETID FROM VALIDATION) AND TICKET.DEPARTURE=? AND TICKET.ARRIVAL=? AND DEPARTUREDATE=?", [comb.departure, comb.arrival, date], function (err, rows) {
-
+                    var time;
+                    for (var i = 0; i < rows.length; i++) {
+                        time = new Date(parseFloat(rows[i].DEPARTUREDATE.replace(",", ".")) + 3600);
+                        rows[i].DEPARTUREDATE = time.getUTCDate() + '/' + (time.getUTCMonth() + 1) + '/' + time.getUTCFullYear() + ' ' + time.getHours() + ':' + time.getMinutes();
+                        if (time.getMinutes() == 0)
+                            rows[i].DEPARTUREDATE += '0';
+                    }
                     res = res.concat(rows);
+
                     callback1(null, rows);
                 });
 
@@ -617,8 +639,11 @@ exports.exitTime = function (station1, station2, callback) {
                         split = rows1[i].startTime.split(':');
                         date.setHours(split[0]);
                         date.setMinutes(split[1] + time);
+                        if (date.getMinutes() == 0)
+                            rsp.push(date.getHours() + ':' + date.getMinutes() + '0');
+                        else
+                            rsp.push(date.getHours() + ':' + date.getMinutes());
 
-                        rsp.push(date.getHours() + ':' + date.getMinutes());
                     }
                     callback({
                         response: rsp
