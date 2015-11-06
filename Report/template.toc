@@ -2,12 +2,11 @@
 \contentsline {section}{\numberline {1}Introdu\IeC {\c c}\IeC {\~a}o}{3}
 \contentsline {section}{\numberline {2}Tecnologias}{3}
 \contentsline {section}{\numberline {3}Arquitetura}{3}
-\contentsline {section}{\numberline {4}Front-end}{6}
-\contentsline {subsection}{\numberline {4.1}Interface gr\IeC {\'a}fica da aplica\IeC {\c c}\IeC {\~a}o da loja}{6}
-\contentsline {subsection}{\numberline {4.2}Interface gr\IeC {\'a}fica da aplica\IeC {\c c}\IeC {\~a}o do armaz\IeC {\'e}m}{8}
-\contentsline {subsection}{\numberline {4.3}Interface gr\IeC {\'a}fica da aplica\IeC {\c c}\IeC {\~a}o \textit {web}}{9}
-\contentsline {subsection}{\numberline {4.4}Casos de Uso}{13}
-\contentsline {section}{\numberline {5}Conclus\IeC {\~a}o}{13}
-\contentsline {section}{\numberline {6}Recursos}{14}
-\contentsline {subsection}{\numberline {6.1}Bibliografia}{14}
-\contentsline {subsection}{\numberline {6.2}\it {Software}}{14}
+\contentsline {section}{\numberline {4}Front-end}{7}
+\contentsline {subsection}{\numberline {4.1}Interface gr\IeC {\'a}fica da aplica\IeC {\c c}\IeC {\~a}o do cliente}{7}
+\contentsline {subsection}{\numberline {4.2}Interface gr\IeC {\'a}fica da aplica\IeC {\c c}\IeC {\~a}o do inspector}{13}
+\contentsline {subsection}{\numberline {4.3}Casos de Uso}{15}
+\contentsline {section}{\numberline {5}Conclus\IeC {\~a}o}{16}
+\contentsline {section}{\numberline {6}Recursos}{16}
+\contentsline {subsection}{\numberline {6.1}Bibliografia}{16}
+\contentsline {subsection}{\numberline {6.2}\it {Software}}{16}
