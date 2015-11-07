@@ -53,7 +53,7 @@ Ricardo Daniel Soares da Silva - 201108043 (ei11079@fe.up.pt)\\
 
 O presente documento apresenta o desenvolvimento do projeto \textit{Android system for train tickets} para a unidade curricular de Computação Móvel.
 
-O projeto tem como objetivo o desenvolvimento de um sistema, \textit{Android system for train tickets}, para uma empresa ferroviária capaz de ofereçer aos seus clientes uma aplicação Android através da qual estyes possam consultar os horários disponíveis e comprar bilhetes. Os inspectores da empresa devem também ter acesso a uma aplicação Android onde possam validar os bilhetes para as viagens das quais estão encarregues.  
+O projeto tem como objetivo o desenvolvimento de um sistema, \textit{Android system for train tickets}, para uma empresa ferroviária capaz de ofereçer aos seus clientes uma aplicação Android através da qual estes possam consultar os horários disponíveis e comprar bilhetes. Os inspectores da empresa devem também ter acesso a uma aplicação Android onde possam validar os bilhetes para as viagens das quais estão encarregues.  
 
 O sistema é composto por um servidor que é acedido tanto pela aplicação do cliente bem como pela do inspector sendo que, cada uma das aplicações apresenta um conjunto de pedidos distintos. O servidor encontra-se ligado a uma base de dados onde são armazenadas as informações relativas aos utilizadores do sistema, bilhetes, horários, entre outras.
 
@@ -80,7 +80,12 @@ Por último, para gestão de dependências do projeto foi usado o \textit{NuGet}
 
 O sistema conta com duas aplicações Android, uma destinada aos clientes e outra destinada aos inspectores da empresa e um servidor capaz de responder aos pedidos de cada uma destas aplicações, como representado na fig. \ref{fig:arch}. Acrescenta-se ainda uma persistência de dados tanto no servidor bem como nas aplicações Android, ou seja, as aplicações apresentam também uma persistência de dados local.
 
-\ref{fig:DBWarehouse}
+\begin{figure}[h!]
+	\centering
+	\includegraphics[width=0.8\textwidth]{db.png}
+	\caption{Base de dados do servidor.}
+	\label{fig:db}
+\end{figure}
 
 \newpage
 
@@ -104,105 +109,79 @@ Apresenta-se de seguida os componentes do sistema:
 
 \section{Front-end}
 
-\subsection{Interface gráfica da aplicação da loja}
+\subsection{Interface gráfica da aplicação do cliente}
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.8\textwidth]{Store_GUI_Login.png}
-    \caption{Interface gráfica da aplicação da loja - \textit{Login.}}
+    \includegraphics[width=0.5\textwidth]{Screenshot_Sign_In.png}
+    \caption{Interface gráfica da aplicação do cliente - \textit{Sign In.}}
     \label{fig:c1}
 \end{figure}
 
-Ao nível da interface gráfica desenvolvida para a aplicação presente na loja é disponibilizada numa primeira fase um ecrã de \textit{login}, fig. \ref{fig:c1}, onde o funcionário da loja pode entrar no sistema.
-
-Após o funcionário fazer \textit{login} no sistema são disponibilizadas as opções de criar uma venda e de verificar quais as encomendas efetuadas através da aplicação \textit{web} podendo estas serem marcadas como enviadas após o envio para o cliente, fig. \ref{fig:c2} e \ref{fig:c3}.
-
-Por último, no momento em que é criada uma venda o sistema questiona o funcionário se pretende imprimir uma fatura, fig. \ref{fig:c4}, sendo esta exportada para um ficheiro pdf em caso afirmativo.
-
 \begin{figure}[H]
-    \centering
-    \includegraphics[width=0.8\textwidth]{Store_GUI_Main.png}
-    \caption{Interface gráfica da aplicação da loja - Ecrã principal.}
-    \label{fig:c2}
+	\centering
+	\includegraphics[width=0.5\textwidth]{Screenshot_Timetables.png}
+	\caption{Interface gráfica da aplicação do cliente - Consulta de horários}
+	\label{fig:c2}
 \end{figure}
+
+Ao nível da interface gráfica desenvolvida para a aplicação do cliente é disponibilizada numa primeira fase um ecrã de \textit{login}, fig. \ref{fig:c1}, onde o cliente pode entrar no sistema ou consultar os horários disponíveis, fig. \ref{fig:c2}.
+
+Após o funcionário fazer \textit{login} no sistema são disponibilizadas as opções de comprar bilhetes, consultar os seus bilhetes ou ver os horários disponíveis, fig. \ref{fig:c3}, \ref{fig:c4} e \ref{fig:c5}.
+
+Quando o utilizador seleciona um bilhete a partir do ecrã de consulta de bilhetes é apresentado um ecrã com a informação detalhada do bilhete selecionado, incluindo o QR associado, fig. \ref{fig:c6}.
+
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.8\textwidth]{Store_GUI_Order_Pending.png}
-    \caption{Interface gráfica da aplicação da loja - Ecrã principal com encomenda pendente.}
+    \includegraphics[width=0.5\textwidth]{Screenshot_Main.png}
+    \caption{Interface gráfica da aplicação co cliente - Ecrã principal.}
     \label{fig:c3}
 \end{figure}
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.8\textwidth]{Store_GUI_Receipt_Confirmation_Dialog.png}
-    \caption{Interface gráfica da aplicação da loja - Confirmação de impressão de fatura de uma venda.}
+    \includegraphics[width=0.5\textwidth]{Screenshot_Buy_Ticket.png}
+    \caption{Interface gráfica da aplicação do cliente - Compra de bilhetes.}
     \label{fig:c4}
 \end{figure}
-
-\subsection{Interface gráfica da aplicação do armazém}
-
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.8\textwidth]{Warehouse_GUI_Main.png}
-    \caption{Interface gráfica da aplicação do armazém - Ecrã principal.}
+    \includegraphics[width=0.5\textwidth]{Screenshot_My_Tickets.png}
+    \caption{Interface gráfica da aplicação do cliente - Consulta de bilhetes.}
     \label{fig:c5}
 \end{figure}
-
-Ao nível da interface gráfica desenvolvida para a aplicação presente no armazém esta contém apenas uma janela em que é disponibilizada uma lista de pedidos de livros por parte da loja devendo o funcionário do armazém colocar um visto num pedido quando os livros correspondentes a esse pedido forem enviados para a loja, fig. \ref{fig:c5}.
-
-\subsection{Interface gráfica da aplicação \textit{web}}
-
 \begin{figure}[H]
-    \centering
-    \includegraphics[width=0.8\textwidth]{Web_Initial.png}
-    \caption{Interface gráfica da aplicação \textit{web} - Ecrã inicial.}
-    \label{fig:c6}
+	\centering
+	\includegraphics[width=0.5\textwidth]{Screenshot_Ticket.png}
+	\caption{Interface gráfica da aplicação do cliente - Consulta de bilhete.}
+	\label{fig:c6}
 \end{figure}
 
+\subsection{Interface gráfica da aplicação do inspector}
+
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.8\textwidth]{Web_Login.png}
-    \caption{Interface gráfica da aplicação \textit{web} - \textit{Login}.}
+    \includegraphics[width=0.5\textwidth]{Screenshot_Inspector_Main.png}
+    \caption{Interface gráfica da aplicação do inspector - Ecrã principal.}
     \label{fig:c7}
 \end{figure}
 
 \begin{figure}[H]
-    \centering
-    \includegraphics[width=0.8\textwidth]{Web_Register.png}
-    \caption{Interface gráfica da aplicação \textit{web} - Registo.}
-    \label{fig:c8}
+	\centering
+	\includegraphics[width=0.5\textwidth]{Screenshot_Inspector_Statistics.png}
+	\caption{Interface gráfica da aplicação do inspector - Estatísticas.}
+	\label{fig:c8}
 \end{figure}
 
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.8\textwidth]{Web_Profile.png}
-    \caption{Interface gráfica da aplicação \textit{web} - Perfil.}
-    \label{fig:c9}
-\end{figure}
+Ao nível da interface gráfica desenvolvida para a aplicação do inspector é apresentado um ecrã inicial com um botão para proceder à validação de um bilhete através da leitura do respetivo código QR, fig. \ref{fig:c7}.
 
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.8\textwidth]{Web_Orders.png}
-    \caption{Interface gráfica da aplicação \textit{web} - Encomendas efetuadas.}
-    \label{fig:c9}
-\end{figure}
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.8\textwidth]{Web_Catalog.png}
-    \caption{Interface gráfica da aplicação \textit{web} - Consulta dos livros disponíveis em catálogo e possibilidade de fazer encomenda.}
-    \label{fig:c10}
-\end{figure}
-
-Ao nível da interface gráfica desenvolvida para a aplicação \textit{web} numa primeira fase um ecrã onde é possível escolher entre fazer \textit{login} ou registar caso o utilizador ainda não seja cliente da loja, fig. \ref{fig:c6}.
-
-Após o cliente fazer \textit{login} no sistema são disponibilizadas as opções de ver o seu perfil onde são apresentados os seus dados pessoais (fig \ref{fig:c8}), consultar as encomendas efetuadas (fig \ref{fig:c9}) e consultar o catálogo dos livros disponíveis para venda com a possibilidade fazer uma encomenda (fig \ref{fig:c10}).
+Ao carregar no menu de opções é também possível aceder a um ecrã onde são apresentados alguns dados estatísticos, \ref{fig:c8}.
 
 \subsection{Casos de Uso}
 \begin{figure}[H]
-    \centering
-    \includegraphics[width=0.8\textwidth]{use.png}
-    \caption{Diagrama de casos de uso.}
-    \label{fig:use}
+	\centering
+	\includegraphics[width=0.6\textwidth]{use.png}
+	\caption{Diagrama de casos de uso.}
+	\label{fig:use}
 \end{figure}
 
 
@@ -222,24 +201,24 @@ O sistema pode ser utilizado colocando o servidor Node.js a correr, colocando o 
 
 Aplicação do cliente:
 \begin{itemize}
-\item \textit{Username}: joao
-\item \textit{Password}: joao
+	\item \textit{Username}: joao
+	\item \textit{Password}: joao
 \end{itemize}
 
 \section{Recursos}
 
 \subsection{Bibliografia}
 \begin{description}
-\item Android API Guides, \url{https://developer.android.com/guide/index.html}.
-\item Distribution and Integration Technologies, Miguel Monteiro, Faculdade de Engenharia da Universidade do Porto, \url{https://web.fe.up.pt/~apm/CM/}.
+	\item Android API Guides, \url{https://developer.android.com/guide/index.html}.
+	\item Distribution and Integration Technologies, Miguel Monteiro, Faculdade de Engenharia da Universidade do Porto, \url{https://web.fe.up.pt/~apm/CM/}.
 \end{description}
 \subsection{\it{Software}}
 \begin{description}
-\item Android Studio, Google, \url{https://developer.android.com/sdk/index.html}.
-\item BlueStacks App Player, BlueStacks, \url{www.bluestacks.com/}.
-\item WebStorm, JetBrains, \url{https://www.jetbrains.com/webstorm/}.
-\item Sublime Text, \url{www.sublimetext.com/}.
-\item DB Browser for SQLite, \url{http://sqlitebrowser.org/}.
+	\item Android Studio, Google, \url{https://developer.android.com/sdk/index.html}.
+	\item BlueStacks App Player, BlueStacks, \url{www.bluestacks.com/}.
+	\item WebStorm, JetBrains, \url{https://www.jetbrains.com/webstorm/}.
+	\item Sublime Text, \url{www.sublimetext.com/}.
+	\item DB Browser for SQLite, \url{http://sqlitebrowser.org/}.
 \end{description}
 
 
