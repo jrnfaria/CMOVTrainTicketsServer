@@ -358,13 +358,14 @@ var stationsExists = function (departure, arrival, date, callback) {
 }
 
 exports.validateTickets = function (tickets, callback) {
+
     async.forEach(tickets, function (ticket, callback1) {
         module.exports.validateTicket(ticket.ticketId, ticket.deviceId, function (resp, err) {
             callback1(err, resp);
         });
     }, function (err) {
         if (err) {
-            callback(err, null);
+            callback(null, err);
         } else {
             callback({
                 response: 'ok'
@@ -375,39 +376,50 @@ exports.validateTickets = function (tickets, callback) {
 
 exports.validateTicket = function (ticketid, deviceid, callback) {
     exports.ticket(ticketid, function (tickets) {
-        if (tickets.length == 1) {
-            exports.validation(ticketid, function (validations) {
-                if (validations.length == 0) {
-                    var stmt = db.prepare("INSERT INTO VALIDATION (TICKETID, DEVICEID) VALUES ($ticketId, $deviceId)");
-                    stmt.bind({
-                        $ticketId: ticketid,
-                        $deviceId: deviceid
-                    });
-                    stmt.run();
-                    stmt.finalize();
 
-                    callback({
-                        response: "OK"
-                    }, null);
-                } else {
-                    if (validations.length == 1) {
-                        if (validations[0].DEVICEID == deviceid) {
-                            callback({
-                                response: "OK"
-                            }, null);
-                        } else {
-                            callback({
-                                response: "Ticket already validated with another device"
-                            }, null);
+        if (tickets != null) {
+            tickets = tickets.response;
+            if (tickets.length == 1) {
+                exports.validation(ticketid, function (validations) {
+                    validations = validations.response;
+                    if (validations.length == 0) {
+                        var stmt = db.prepare("INSERT INTO VALIDATION (TICKETID, DEVICEID) VALUES ($ticketId, $deviceId)");
+                        stmt.bind({
+                            $ticketId: ticketid,
+                            $deviceId: deviceid
+                        });
+                        stmt.run();
+                        stmt.finalize();
+                        callback({
+                            response: "OK"
+                        }, null);
+
+                    } else {
+                        if (validations.length == 1) {
+                            if (validations[0].DEVICEID == deviceid) {
+                                callback({
+                                    response: "OK"
+                                }, null);
+                            } else {
+                                callback({
+                                    response: "Ticket already validated with another device"
+                                }, null);
+                            }
                         }
                     }
-                }
-            });
+                });
+            } else {
+                callback({
+                    response: "Ticket not found"
+                }, null);
+            }
         } else {
-            callback({
+            callback(null, {
                 response: "Ticket not found"
-            }, null);
+            });
         }
+
+
     });
 }
 
@@ -445,14 +457,19 @@ exports.mytickets = function (username, callback) {
 
 exports.ticket = function (ticketid, callback) {
     db.all("SELECT * FROM TICKET WHERE TICKETID=?", [ticketid], function (err, rows) {
-        rows[0].encrypt = key.sign(rows[0].TICKETID + '|' + rows[0].DEPARTUREDATE, 'base64', 'utf8');
-        var time = new Date(parseFloat(rows[0].DEPARTUREDATE.replace(",", ".")) + 3600);
-        rows[0].DEPARTUREDATE = time.getUTCDate() + '/' + (time.getUTCMonth() + 1) + '/' + time.getUTCFullYear() + ' ' + time.getHours() + ':' + time.getMinutes();
-        if (time.getMinutes() == 0)
-            rows[0].DEPARTUREDATE += '0';
-        callback({
-            response: rows
-        }, null);
+        if (JSON.stringify(rows) != '[]') {
+            rows[0].encrypt = key.sign(rows[0].TICKETID + '|' + rows[0].DEPARTUREDATE, 'base64', 'utf8');
+            var time = new Date(parseFloat(rows[0].DEPARTUREDATE.replace(",", ".")) + 3600);
+            rows[0].DEPARTUREDATE = time.getUTCDate() + '/' + (time.getUTCMonth() + 1) + '/' + time.getUTCFullYear() + ' ' + time.getHours() + ':' + time.getMinutes();
+            if (time.getMinutes() == 0)
+                rows[0].DEPARTUREDATE += '0';
+            callback({
+                response: rows
+            }, null);
+        } else
+            callback(null, {
+                response: 'Ticket doesnt exist'
+            });
     });
 }
 
@@ -629,7 +646,7 @@ exports.exitTime = function (station1, station2, callback) {
             db.all("SELECT TIMETABLEID as timetableId,PASSTIME as passTime,STATIONID as stationId FROM  TIMETABLESTATION WHERE STATIONID=? AND TIMETABLEID IN(SELECT TIMETABLEID FROM TIMETABLESTATION WHERE STATIONID=?) ORDER BY TIMETABLEID,PASSTIME", [station1, station2], function (err, rows) {
                 var timetableId = 0;
                 var time;
-                if (rows[0].passTime <rows[1].passTime) {
+                if (rows[0].passTime < rows[1].passTime) {
                     timetableId = rows[0].timetableId;
                     time = rows[0].passTime;
                 } else {
@@ -637,8 +654,6 @@ exports.exitTime = function (station1, station2, callback) {
                     time = rows[1].passTime;
                 }
                 db.all("SELECT STARTTIME AS startTime FROM  TRAINTIMETABLE WHERE TIMETABLEID=? ORDER BY STARTTIME", [timetableId], function (err, rows1) {
-                    console.log(rows1);
-                    console.log(time);
                     var rsp = new Array();
                     var date = new Date();
                     var split;
@@ -671,7 +686,7 @@ exports.price = function (station1, station2, callback) {
                 response: "One of the stations doesn't exist"
             });
         } else {
-             if (stations[0].NAME == station1) {
+            if (stations[0].NAME == station1) {
                 station1 = stations[0].ID;
                 station2 = stations[1].ID;
             } else {

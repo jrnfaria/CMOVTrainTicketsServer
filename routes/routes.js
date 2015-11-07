@@ -69,7 +69,7 @@ module.exports = function (app) {
 
     app.post('/validateticket', function (req, res) {
         var ticketid = req.body.ticketid;
-        var deviceid = req.body.deviceid;
+        var deviceid = req.body.deviceid; 
 
         requests.validateTicket(ticketid, deviceid, function (found, err) {
             res.json(createResponse(found, err));
@@ -100,8 +100,8 @@ module.exports = function (app) {
         });
     });
 
-    app.get('/statistics', function (req, res) {
-        requests.statistics(function (found, err) {
+    app.get('/statistics', function (req, res) { 
+        requests.statistics(function (found, err) { 
             res.json(createResponse(found, err));
         });
     });
