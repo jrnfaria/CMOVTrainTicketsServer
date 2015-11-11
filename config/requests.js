@@ -49,8 +49,8 @@ var randomMoneyFail = function () {
 
 exports.signup = function (name, username, password, creditcardtype, creditcardnumber, creditcardvalidity, callback) {
 
-    if (userAlreadyExists(username)) {
-        var stmt = db.prepare("INSERT INTO USER VALUES ($name, $username, $password)");
+    if (!userAlreadyExists(username)) {
+        var stmt = db.prepare("INSERT INTO USER (NAME,USERNAME,PASSWORD) VALUES ($name, $username, $password)");
         stmt.bind({
             $name: name,
             $username: username,
@@ -58,7 +58,7 @@ exports.signup = function (name, username, password, creditcardtype, creditcardn
         });
         stmt.run();
         stmt.finalize();
-        stmt = db.prepare("INSERT INTO CREDITCARD VALUES ($creditcardtype, $creditcardnumber, $creditcardvalidity, $username)");
+        stmt = db.prepare("INSERT INTO CREDITCARD (TYPE,NUMBER,VALIDITY,USER) VALUES ($creditcardtype, $creditcardnumber, $creditcardvalidity, $username)");
         stmt.bind({
             $creditcardtype: creditcardtype,
             $creditcardnumber: creditcardnumber,

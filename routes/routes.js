@@ -24,9 +24,9 @@ module.exports = function (app) {
         var name = req.body.name;
         var username = req.body.username;
         var password = req.body.password;
-        var creditCardType = req.body.creditcardtype;
-        var creditCardNumber = req.body.creditcardnumber;
-        var creditCardValidity = req.body.creditcardvalidity;
+        var creditCardType = req.body.cc_type;
+        var creditCardNumber = req.body.cc_number;
+        var creditCardValidity = req.body.cc_validity;
 
         requests.signup(name, username, password, creditCardType, creditCardNumber, creditCardValidity, function (found, err) {
             res.send(createResponse(found, err));
